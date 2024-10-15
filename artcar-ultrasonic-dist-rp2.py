@@ -23,6 +23,10 @@ soundSpeed = 344.11
 debug = True
 
 while True:
+    elapsed_time = time.ticks_diff(time.ticks_ms(), loopTime)
+    print("Elapsed time:", elapsed_time, "msec\n")
+    loopTime = time.ticks_ms()
+    #update speed of sound using temp & humidity from dht22
     try:
         dht_sensor.measure()
         tempC = dht_sensor.temperature()
@@ -39,12 +43,9 @@ while True:
             print(f"Temp °F : {tempF:.2f}")
             print(f"Humidity: {humidity:.2f}%")
             print(f"Speed Sound: {soundSpeed:.1f} m/s")
-        #
-        elapsed_time = time.ticks_diff(time.ticks_ms(), loopTime)
-        print("Elapsed time:", elapsed_time, "msec\n")
     except Exception as e:
         print("Error reading DHT22:", str(e))
     #
     time.sleep(0.1)
-    loopTime = time.ticks_ms()
+
     
