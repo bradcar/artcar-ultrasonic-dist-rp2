@@ -38,6 +38,7 @@ led = Pin(25, Pin.OUT)
 # DC GPIO 24? GPIO 9 p12
 # CS chip select CE chip enable GPIO 8 p11
 
+# hints on SPI interface here? https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
 '''
 #display SSD spi
 #serial = spi(device=0, port=0, gpio_SCLK=15, gpio_SDA=14, gpio_RST=30, gpio_DC=12, gpio_CE=11)
@@ -51,13 +52,13 @@ oled = SSD1306_I2C(128, 64, i2c)
 timecall = Timer()
 
 
-def tick(timer):
+def blink(timer):
     global led
     led.toggle()
     
 
 
-timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=tick)
+#timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
 dht_sensor = dht.DHT22(dht_pin)
 loopTime = time.ticks_ms()
 # init soundSpeed if dht22 sensor fails
@@ -155,4 +156,5 @@ while True:
             print("Error reading DHT22:", str(e))
     #
     #Every loop do this
+    led.toggle()
     time.sleep_ms(500)
