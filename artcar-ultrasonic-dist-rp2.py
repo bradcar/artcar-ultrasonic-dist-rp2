@@ -92,8 +92,9 @@ print("Starting...")
 print(f"Speed Sound: {soundSpeed:.1f} m/s\n")
 
 bitmap_artcar_image=bytearray(b'\xc9\x04\x59\x11\x0c\x08\x43\xc8\x82\x8e\x90\x93\x10\x93\xe0\x63\x00\x78\xe0\xe3\x07\xff\x9f\xff\xff\xff\xfc\xff\xc0\x00\x00\x00\x00\x00\x03\x40\x1c\xf3\xe3\x8e\x78\x02\x47\x22\x88\x84\x51\x44\xe2\x45\x22\x88\x84\x11\x44\xa2\x47\x22\xf0\x84\x11\x78\xe2\x20\x3e\x88\x84\x1f\x44\x04\x10\x22\x88\x84\x51\x44\x08\x0c\x22\x88\x83\x91\x44\x30\x03\x00\x00\x00\x00\x00\xc0\x00\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00')
+# test print at top of oled
 fb = framebuf.FrameBuffer(bitmap_artcar_image,56,15, framebuf.MONO_HLSB)
-oled.blit(fb,22,36)
+oled.blit(fb,40,8)
 oled.show()
 
 
@@ -136,9 +137,9 @@ while True:
                 print(f"Humidity: {humidity:.2f}%")
                 print(f"Speed Sound: {soundSpeed:.1f} m/s")
                 print("Distance: ",dist,"cm\n")
+
             # fill with black and the reprint
             oled.fill(0)
-
             oled.text(f"TempF= {tempF:.1f}F", 0, 0)
             oled.text(f"Humid= {humidity:.1f}%", 0, 12)
             oled.text(f"Sound={soundSpeed:.1f}m/s", 0, 24)
