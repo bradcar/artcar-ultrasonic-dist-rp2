@@ -1,3 +1,14 @@
+# Raspberry Pi Pico 2 project - ArtCar Ultrasound - Oct 2024
+#   based on Brad's Arduino UNO and 128x64 OLED Display for rear parking sensor
+#      - speed of sound with temp & humidity correction
+#      - front & Rear facing changed with button
+#      - in/cm F/C changed with button
+#      Brad's Arduino GitHub: 
+#
+# project Based on GREAT work by upir!!!
+#     youtube full video: https://youtu.be/gg08H-6Z1Lo
+#     created by upir, 2022
+
 from machine import Pin, Timer
 import machine
 import dht
