@@ -1,4 +1,4 @@
-# Raspberry Pi Pico 2 project - ArtCar Ultrasound - Oct 2024
+# Raspberry Pi Pico 2 project - ArtCar ultrasonic - Oct 2024
 #   based on Brad's Arduino UNO and 128x64 OLED Display for rear parking sensor
 #      - speed of sound with temp & humidity correction
 #      - front & Rear facing changed with button
@@ -54,6 +54,15 @@ oled_spi = machine.SPI(1)
 print("oled_spi:", oled_spi)
 oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
 
+# Constants and setup
+NUMBER_OF_SENSORS = 1
+MIN_DIST = 2
+MAX_DIST = 100
+dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)
+dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)
+dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)
+dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)
+
 #  DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
 # then replace ", 0"  with "\"
@@ -73,12 +82,14 @@ bitmap_artcar_image = bytearray([
 ])
 
 loopTime = time.ticks_ms()
-# init soundSpeed if dht22 sensor fails
-soundSpeed = 344.11
-tempC = 0.0
-tempF = 0.0
+# init speed_sound if dht22 sensor fails
+speed_sound = 344.11
+temp_c = 0.0
 humidity = 0.0
-errorstate = False
+
+rear_sensors = False
+metric = False
+error_state = False
 debug = False
 
 
@@ -93,9 +104,34 @@ def blink(timer):
     """
     global led
     led.toggle()
+    
+def calc_speed_sound(temp_c, humidity):
+    global error_state, debug
+    #update speed of sound using temp & humidity from dht22
+    try:
+        dht_sensor.measure()
+        temp_c = dht_sensor.temperature()
+        temp_f = (temp_c * 9.0 / 5.0) + 32.0
+        humidity = dht_sensor.humidity()
+        
+        # Speed sound with temp correction: (20.05 * sqrt(273.16 + temp_c))
+        # Speed sound temp & humidity calculator: http://resource.npl.co.uk/acoustics/techguides/speedair/
+        # did a 2d linear fit of temp vs temp&humid speeds to create my own correction, error is now +/-0.07%            # valid for 0C to 30C temp & 75 to 102 kPa pressure
+        speed_sound = (20.05 * math.sqrt(273.16 + temp_c)) \
+                      + (0.0006545 * humidity + 0.00475) * temp_c \
+                      + (0.001057 * humidity + 0.07121)
+
+        if debug:
+            #print(f"Temp °C : {temp_c:.2f}")
+            print(f"Temp °F : {temp_f:.2f}")
+            print(f"Humidity: {humidity:.2f}%")
+            print(f"Speed Sound: {speed_sound:.1f} m/s\n")
+    except Exception as e:
+        print("Error reading DHT22:", str(e))
+    return(speed_sound)
 
     
-def ultra(speed, timeout=50000):  # timeout in microseconds
+def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
     """
     Measure the distance using an ultrasonic sensor with a timeout.
      * tried with 3.3v, but really need 5v for ultrasonic & display
@@ -121,28 +157,51 @@ def ultra(speed, timeout=50000):  # timeout in microseconds
     start = utime.ticks_us()
     while echo.value() == 0:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
-            #print("Ultrasonic Timeout waiting for echo to go high: too close or malfunction.")
-            return -1  # Return -1 to indicate a timeout
+            print("error ultrasonic: too close or malfunction.")
+            return 0    # return max distance
 
-    signaloff = utime.ticks_us()
+    signal_off = utime.ticks_us()
 
     # Wait for echo to go low, with timeout
     start = utime.ticks_us()
     while echo.value() == 1:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
-            #print("Ultrasonic Timeout waiting for echo to go low: too far no signal returned.")
-            return -2  # Return -1 to indicate a timeout
+            print("error ultrasonic: no signal returned, too far.")
+            return 300  # return max distance
 
-    signalon = utime.ticks_us()
+    signal_on = utime.ticks_us()
 
     # Calculate cm distance
-    distance = ((signalon - signaloff) * speed / 20000.0)
-    return distance
+    return (signal_on - signal_off) * (speed / 20000.0)
+
+def display_environment(temp_c, humidity, speed_sound, dist):
+    global metric, error_state, debug
+    
+    # never display text upside down
+#     oled.rotate(True)
+    if not error_state:
+        temp_f = (temp_c * 9.0 / 5.0) + 32.0
+        oled.fill(0)
+        if metric:
+            oled.text(f"Temp = {temp_c:.1f}C", 0, 0)
+        else:
+            oled.text(f"Temp = {temp_f:.1f}F", 0, 0)
+        oled.text(f"Humid= {humidity:.1f}%", 0, 12)
+        if metric:
+            oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
+            oled.text(f"Dist= {dist:.1f}cm", 0, 55)
+        else:
+            oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
+            oled.text(f"Dist= {dist/2.54:.0f}in", 0, 55)
+        
+        fb = framebuf.FrameBuffer(bitmap_artcar_image,56,15, framebuf.MONO_HLSB)
+        oled.blit(fb,22,36)
+        oled.show()
+        return
 
 
 # projects: https://www.tomshardware.com/news/raspberry-pi
 # fonts: https://www.youtube.com/watch?v=kxlN1knBpQ0  Peter Hinch's larger 14px to 20px fonts & short_writer.py
-# 6x7px font
 # https://github.com/easytarget/microPyEZfonts/blob/main/examples/fonts/ezFBfont_07_font_tiny5_ascii.py
 
 # startup code
@@ -151,7 +210,7 @@ print("====================================")
 print(sys.implementation[0], os.uname()[3],
       "\nrun on", os.uname()[4])
 print("====================================")
-print(f"Default Speed Sound: {soundSpeed:.1f} m/s\n")
+print(f"Default Speed Sound: {speed_sound:.1f} m/s\n")
 # if want blinking happening in background
 #timecall = Timer()
 #timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
@@ -166,46 +225,36 @@ zzz(1)
 # check status of DHT sensor
 try:
     dht_sensor.measure()
-    tempC = dht_sensor.temperature()
-    tempF = (tempC * 9.0 / 5.0) + 32.0
+    temp_c = dht_sensor.temperature()
+    temp_f = (temp_c * 9.0 / 5.0) + 32.0
     humidity = dht_sensor.humidity()
 except Exception as e:
     oled.text("Error DHT22", 0, 24)
     oled.text(str(e), 0, 36)
     oled.show()
-    tempC = tempF = humidity = soundSpeed = 0.0  # Reset to default
-    errorstate = True
+    temp_c = temp_f = humidity = speed_sound = 0.0  # Reset to default
+    error_state = True
 
 '''
 Todo; think about ultrasonic errors and fix this
 try:
-    ultra(soundSpeed, timeout=30000)
+    ultrasonic_distance(speed_sound, timeout=30000)
 except Exception as e:
-    oled.text("Error Ultrasonic", 0, 24)
+    oled.text("Error ultrasonic", 0, 24)
     #oled.text(str(e), 0, 36)
     oled.show()
-    errorstate = True
-'''
-
-'''
-with canvas(device) as draw:
-    draw.rectangle(device.bounding_box, outline="white", fill="black")
-    draw.text((30, 40), "Hello World", fill="white")
+    error_state = True
 '''
 
 # main loop
 while True:    
-    dist = ultra(soundSpeed, timeout=30000)  # 30ms timeout 257cm
-    if dist == -1:
-        print("error Ultrasonic: too close or malfunction.")
-        dist = 0
-    elif dist == -2:
-        print("error Ultrasonic: no signal returned, too far.")
-        dist = 300
-    
-    #if need to flip display 
-    #oled.rotate(180)
-    #oled.invert(1)
+# error with micropython rotate call oled.rotate display will rotate but can not be unrotated
+#     if rear_sensors:
+#         oled.rotate(False)
+#     else:
+#         oled.rotate(True)     
+#    oled.rotate(True)
+#    oled.rotate(False)
 
     elapsed_time = time.ticks_diff(time.ticks_ms(), loopTime)
     #if elapsed_time > 4000:
@@ -213,37 +262,14 @@ while True:
         #print("Elapsed time:", elapsed_time, "msec\n")
         loopTime = time.ticks_ms()
         
-        #update speed of sound using temp & humidity from dht22
-        try:
-            dht_sensor.measure()
-            tempC = dht_sensor.temperature()
-            tempF = (tempC * 9.0 / 5.0) + 32.0
-            humidity = dht_sensor.humidity()
-            
-            # Speed sound with temp correction: (20.05 * sqrt(273.16 + tempC))
-            # Speed sound temp & humidity calculator: http://resource.npl.co.uk/acoustics/techguides/speedair/
-            # did a 2d linear fit of temp vs temp&humid speeds to create my own correction, error is now +/-0.07%            # valid for 0C to 30C temp & 75 to 102 kPa pressure
-            soundSpeed = (20.05 * math.sqrt(273.16 + tempC)) + (0.0006545 * humidity + 0.00475) * tempC + (0.001057 * humidity + 0.07121)
-
-            if debug:
-                #print(f"Temp °C : {tempC:.2f}")
-                print(f"Temp °F : {tempF:.2f}")
-                print(f"Humidity: {humidity:.2f}%")
-                print(f"Speed Sound: {soundSpeed:.1f} m/s")
-                print("Distance: ",dist,"cm\n")
-        except Exception as e:
-            print("Error reading DHT22:", str(e))
+        # calc speed of sound based on temp & humidity
+        speed_sound = calc_speed_sound(temp_c, humidity)
         
-        # black dispay, then update results
-        if not errorstate:
-            oled.fill(0)
-            oled.text(f"TempF= {tempF:.1f}F", 0, 0)
-            oled.text(f"Humid= {humidity:.1f}%", 0, 12)
-            oled.text(f"Sound={soundSpeed:.1f}m/s", 0, 24)
-            oled.text(f"Dist= {dist:.1f}cm", 0, 55)
-            fb = framebuf.FrameBuffer(bitmap_artcar_image,56,15, framebuf.MONO_HLSB)
-            oled.blit(fb,22,36)
-            oled.show()
+        #get distance from ultrasonic sensor
+        dist = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
+        
+        # update dispay with results
+        display_environment(temp_c, humidity, speed_sound, dist)
     #
     #Every loop do this
     led.toggle()
