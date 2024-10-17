@@ -4,6 +4,8 @@ import dht
 import time
 import utime
 import math
+from time import sleep as zzz
+
 #ic2
 from machine import Pin, I2C
 from ssd1306 import SSD1306_I2C
@@ -43,7 +45,7 @@ dht_sensor = dht.DHT22(dht_pin)
 #device = ssd1309(serial)
 
 #  DISPLAY IMAGES
-#image2cpp (convert png into C code): https://javl.github.io/image2cpp/
+# image2cpp (convert png into C code): https://javl.github.io/image2cpp/
 # then replace ", 0"  with "\"
 # const unsigned char bitmap_artcar_image[] PROGMEM = {0xc9, 0x04, 0x59, ...
 # goes to bitmap_artcar_image=bytearray(b'\xc9\x04\x59
@@ -81,11 +83,6 @@ def blink(timer):
     """
     global led
     led.toggle()
-    
-
-# if want blinking happening in background
-#timecall = Timer()
-#timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
 
     
 def ultra(speed, timeout=50000):  # timeout in microseconds
@@ -141,12 +138,18 @@ def ultra(speed, timeout=50000):  # timeout in microseconds
 # startup code
 print("Starting...")
 print(f"Default Speed Sound: {soundSpeed:.1f} m/s\n")
+# if want blinking happening in background
+#timecall = Timer()
+#timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
 
-# at start print artcar image at top of oled, check DHT Sensor
+# at start display artcar image at top of oled
 oled.fill(0)
 fb = framebuf.FrameBuffer(bitmap_artcar_image,56,15, framebuf.MONO_HLSB)
 oled.blit(fb,40,8)
 oled.show()
+zzz(1)
+
+# check status of DHT sensor
 try:
     dht_sensor.measure()
     tempC = dht_sensor.temperature()
