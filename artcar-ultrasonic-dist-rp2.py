@@ -115,8 +115,10 @@ def calc_speed_sound(temp_c, humidity):
         humidity = dht_sensor.humidity()
         
         # Speed sound with temp correction: (20.05 * sqrt(273.16 + temp_c))
-        # Speed sound temp & humidity calculator: http://resource.npl.co.uk/acoustics/techguides/speedair/
-        # did a 2d linear fit of temp vs temp&humid speeds to create my own correction, error is now +/-0.07%            # valid for 0C to 30C temp & 75 to 102 kPa pressure
+        # online temp/humid calc: http://resource.npl.co.uk/acoustics/techguides/speedair/
+        # created spreadsheet of diffs between online temp/humid and temp formula
+        # did a 2d linear fit to create my own correction, error is now +/-0.07%
+        # valid for 0C to 30C temp & 75 to 102 kPa pressure
         speed_sound = (20.05 * math.sqrt(273.16 + temp_c)) \
                       + (0.0006545 * humidity + 0.00475) * temp_c \
                       + (0.001057 * humidity + 0.07121)
@@ -201,8 +203,10 @@ def display_environment(temp_c, humidity, speed_sound, dist):
 
 
 # projects: https://www.tomshardware.com/news/raspberry-pi
-# fonts: https://www.youtube.com/watch?v=kxlN1knBpQ0  Peter Hinch's larger 14px to 20px fonts & short_writer.py
-# https://github.com/easytarget/microPyEZfonts/blob/main/examples/fonts/ezFBfont_07_font_tiny5_ascii.py
+# make own fonts: https://www.youtube.com/watch?v=kxlN1knBpQ0 modified short_writer.py
+#   based on Peter Hinch's conversion, writer, and larger 14px to 20px fonts 
+#   https://github.com/peterhinch/micropython-font-to-py
+#   https://github.com/easytarget/microPyEZfonts/blob/main/examples/fonts/ezFBfont_07_font_tiny5_ascii.py
 
 # startup code
 print("Starting...")
