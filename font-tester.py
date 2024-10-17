@@ -4,6 +4,10 @@ import dht
 import time
 import utime
 import math
+import os
+import sys
+from time import sleep as zzz
+
 #from writer import Writer
 from time import sleep as zzz
 from writer_short import Writer
@@ -15,20 +19,32 @@ import freesans17 as font1
 import freesans20 as font2
 import ez5x7 as font3
 #ic2
-from machine import Pin, I2C
-from ssd1306 import SSD1306_I2C
-#
+#from machine import I2C
+#from ssd1306 import SSD1306_I2C
+from ssd1306 import SSD1306_SPI
 import framebuf
-
-# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
 
 # pins
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
-i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+#i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+#oled = SSD1306_I2C(128, 64, i2c)
 
 led = Pin(25, Pin.OUT)
 
-oled = SSD1306_I2C(128, 64, i2c)
+# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
+# spi pins 10,11,12, 13
+# scl (SCLK) gp10 
+# SDA (MOSI) gp11
+# RES (RST)  gp12
+# DC         gp13
+# CS dummy (not connected but assigned gp8
+cs  = machine.Pin(9)    #dummy (any un-used pin), no connection
+res = machine.Pin(12)
+dc  = machine.Pin(13)
+
+oled_spi = machine.SPI(1)
+print("oled_spi:", oled_spi)
+oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
 
 #  DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/

@@ -4,45 +4,43 @@ import dht
 import time
 import utime
 import math
+import os
+import sys
 from time import sleep as zzz
 
 #ic2
-from machine import Pin, I2C
-from ssd1306 import SSD1306_I2C
-#
+#from machine import I2C
+#from ssd1306 import SSD1306_I2C
+from ssd1306 import SSD1306_SPI
 import framebuf
 
-# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
-'''
-from luma.core.interface.serial import spi
-from luma.oled.device import ssd1309
-from luma.core.render import canvas
-from pillow import ImageFont
-'''
 #gc.collect() before executing gc.mem_free()
 
 # pins
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
-i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+#i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+#oled = SSD1306_I2C(128, 64, i2c)
+
 dht_pin = machine.Pin(2)
 trigger = Pin(3, Pin.OUT)
 echo = Pin(4, Pin.IN)
 led = Pin(25, Pin.OUT)
 
-oled = SSD1306_I2C(128, 64, i2c)
+# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
+# spi pins 10,11,12, 13
+# scl (SCLK) gp10 
+# SDA (MOSI) gp11
+# RES (RST)  gp12
+# DC         gp13
+# CS dummy (not connected but assigned gp8
+cs  = machine.Pin(9)    #dummy (any un-used pin), no connection
+res = machine.Pin(12)
+dc  = machine.Pin(13)
 dht_sensor = dht.DHT22(dht_pin)
 
-# spi pins 8,9,10,11,25
-# scl (SCLK) GPIO 11 p15
-# SDA (MOSI) GPIO 10 p14
-# RES (RST)  ? RESET p30
-# DC GPIO 24? GPIO 9 p12
-# CS chip select CE chip enable GPIO 8 p11
-# hints on SPI interface here? https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
-#display SSD spi
-#serial = spi(device=0, port=0, gpio_SCLK=15, gpio_SDA=14, gpio_RST=30, gpio_DC=12, gpio_CE=11)
-#serial = spi(port=0, device=0, gpio_DC=12, gpio_RST=25, gpio_CS=11)
-#device = ssd1309(serial)
+oled_spi = machine.SPI(1)
+print("oled_spi:", oled_spi)
+oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
 
 #  DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
@@ -137,6 +135,10 @@ def ultra(speed, timeout=50000):  # timeout in microseconds
 
 # startup code
 print("Starting...")
+print("====================================")
+print(sys.implementation[0], os.uname()[3],
+      "\nrun on", os.uname()[4])
+print("====================================")
 print(f"Default Speed Sound: {soundSpeed:.1f} m/s\n")
 # if want blinking happening in background
 #timecall = Timer()
