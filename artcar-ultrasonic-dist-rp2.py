@@ -3,7 +3,8 @@
 #      - speed of sound with temp & humidity correction
 #      - front & Rear facing changed with button
 #      - in/cm F/C changed with button
-#      Brad's Arduino GitHub: 
+#      Raspberry Pi GitHub: https://github.com/bradcar/artcar-ultrasonic-dist-rp2
+#      Arduino GitHub:      https://github.com/bradcar/art-car-ultrasonic-dist
 #
 # project Based on GREAT work by upir!!!
 #     youtube full video: https://youtu.be/gg08H-6Z1Lo
