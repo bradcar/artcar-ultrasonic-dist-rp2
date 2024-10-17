@@ -131,7 +131,7 @@ def ultra(speed, timeout=50000):  # timeout in microseconds
 
 
 # projects: https://www.tomshardware.com/news/raspberry-pi
-# fonts: https://www.youtube.com/watch?v=kxlN1knBpQ0
+# fonts: https://www.youtube.com/watch?v=kxlN1knBpQ0  Peter Hinch's larger 14px to 20px fonts & short_writer.py
 # 6x7px font
 # https://github.com/easytarget/microPyEZfonts/blob/main/examples/fonts/ezFBfont_07_font_tiny5_ascii.py
 

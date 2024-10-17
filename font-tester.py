@@ -7,9 +7,13 @@ import math
 #from writer import Writer
 from time import sleep as zzz
 from writer_short import Writer
+
+# Peter Hinch fonts: https://github.com/peterhinch/micropython-font-to-py
+# other fonts: https://github.com/easytarget/microPyEZfonts/tree/main/examples/fonts
 import freesans14 as font0
 import freesans17 as font1
 import freesans20 as font2
+import ez5x7 as font3
 #ic2
 from machine import Pin, I2C
 from ssd1306 import SSD1306_I2C
@@ -56,8 +60,7 @@ fb = framebuf.FrameBuffer(bitmap_artcar_image,56,15, framebuf.MONO_HLSB)
 oled.blit(fb,40,8)
 oled.text("12345678901", 0, 24)
 
-font_writer = Writer(oled,font2, verbose=False)
-
+font_writer = Writer(oled,font3, verbose=False)
 for char in range (32, 126):
     font_writer.set_textpos(0,32)
     font_writer.printstring(f"{char}: {chr(char)} ")
