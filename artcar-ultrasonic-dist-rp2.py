@@ -520,14 +520,13 @@ print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
 #timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
 
 # at start display artcar image at top of oled
-# dispay car --- PRELIM - PARTIAL IMPLEMENTATion
+# display car's *PRELIM* PARTIAL IMPLEMENTATion
+temp_c = 20.56
 temp_f = 69.0
+humidity = 70.0
+speed_sound = SPEED_SOUND_20C_70H
 display_car()
 zzz(5)
-
-temp_c = 0.0
-humidity = 0.0
-speed_sound = SPEED_SOUND_20C_70H
 
 # check status of DHT sensor
 try:
