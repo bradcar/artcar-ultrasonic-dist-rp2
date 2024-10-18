@@ -36,8 +36,8 @@ from framebuf import FrameBuffer, MONO_HLSB
 
 # pins
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
-#i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
-#oled = SSD1306_I2C(128, 64, i2c)
+# i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+# oled = SSD1306_I2C(128, 64, i2c)
 
 dht_pin = machine.Pin(2)
 trigger = Pin(3, Pin.OUT)
@@ -318,13 +318,13 @@ debug = False
 # https://electrocredible.com/raspberry-pi-pico-external-interrupts-button-micropython/
 def callback_1(pin):
     global interrupt_1_flag, debounce_1_time
-    if (time.ticks_ms()-debounce_1_time) > 500:
+    if (time.ticks_ms() - debounce_1_time) > 500:
         interrupt_1_flag= 1
         debounce_1_time=time.ticks_ms()
         
 # def callback_2(pin):
 #     global interrupt_2_flag, debounce_2_time
-#     if (time.ticks_ms()-debounce_2_time) > 500:
+#     if (time.ticks_ms() - debounce_2_time) > 500:
 #         interrupt_2_flag= 1
 #         debounce_2_time=time.ticks_ms()
 
@@ -456,21 +456,21 @@ def display_car ():
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, 0)
             oled.text(f"{temp_f:.0f}", 108, 2)
     
-#     # NEED FIX black pixels overwrite white, need to 'or' the bits together
-#     oled.blit(FrameBuffer(bitmap_sensor_01_a_on, 32, 14, MONO_HLSB), 24, 17) 
-#     oled.blit(FrameBuffer(bitmap_sensor_01_b_on, 32, 16, MONO_HLSB), 21, 25) 
-#     oled.blit(FrameBuffer(bitmap_sensor_01_c_on, 32, 17, MONO_HLSB), 18, 34)
-#     oled.blit(FrameBuffer(bitmap_sensor_01_d_on, 32, 18, MONO_HLSB), 16, 43)
-# 
-#     oled.blit(FrameBuffer(bitmap_sensor_02_a_on, 32,  9, MONO_HLSB), 48, 23)
-#     oled.blit(FrameBuffer(bitmap_sensor_02_b_on, 32,  9, MONO_HLSB), 48, 33)
-#     oled.blit(FrameBuffer(bitmap_sensor_02_c_on, 32, 10, MONO_HLSB), 47, 42)
-#     oled.blit(FrameBuffer(bitmap_sensor_02_d_on, 40, 10, MONO_HLSB), 42, 52) 
-# 
-#     oled.blit(FrameBuffer(bitmap_sensor_03_a_on, 32, 14, MONO_HLSB), 72, 17)
-#     oled.blit(FrameBuffer(bitmap_sensor_03_b_on, 32, 16, MONO_HLSB), 74, 25)
-#     oled.blit(FrameBuffer(bitmap_sensor_03_c_on, 32, 17, MONO_HLSB), 77, 34)
-#     oled.blit(FrameBuffer(bitmap_sensor_03_d_on, 32, 18, MONO_HLSB), 80, 43)
+    # NEED FIX black pixels overwrite white, need to 'or' the bits together
+    oled.blit(FrameBuffer(bitmap_sensor_01_a_on, 32, 14, MONO_HLSB), 24, 17) 
+    oled.blit(FrameBuffer(bitmap_sensor_01_b_on, 32, 16, MONO_HLSB), 21, 25) 
+    oled.blit(FrameBuffer(bitmap_sensor_01_c_on, 32, 17, MONO_HLSB), 18, 34)
+    oled.blit(FrameBuffer(bitmap_sensor_01_d_on, 32, 18, MONO_HLSB), 16, 43)
+
+    oled.blit(FrameBuffer(bitmap_sensor_02_a_on, 32,  9, MONO_HLSB), 48, 23)
+    oled.blit(FrameBuffer(bitmap_sensor_02_b_on, 32,  9, MONO_HLSB), 48, 33)
+    oled.blit(FrameBuffer(bitmap_sensor_02_c_on, 32, 10, MONO_HLSB), 47, 42)
+    oled.blit(FrameBuffer(bitmap_sensor_02_d_on, 40, 10, MONO_HLSB), 42, 52) 
+
+    oled.blit(FrameBuffer(bitmap_sensor_03_a_on, 32, 14, MONO_HLSB), 72, 17)
+    oled.blit(FrameBuffer(bitmap_sensor_03_b_on, 32, 16, MONO_HLSB), 74, 25)
+    oled.blit(FrameBuffer(bitmap_sensor_03_c_on, 32, 17, MONO_HLSB), 77, 34)
+    oled.blit(FrameBuffer(bitmap_sensor_03_d_on, 32, 18, MONO_HLSB), 80, 43)
       
 #         # Adjust text position based on length
 #         if oled.text(buffer, 106, 2) == 18:
