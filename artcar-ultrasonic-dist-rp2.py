@@ -15,9 +15,9 @@ import machine
 import dht
 import time
 import utime
-import math
-import os
-import sys
+from math import sqrt
+from os import uname
+from sys import implementation
 from time import sleep as zzz
 
 #ic2
@@ -36,6 +36,9 @@ import framebuf
 dht_pin = machine.Pin(2)
 trigger = Pin(3, Pin.OUT)
 echo = Pin(4, Pin.IN)
+button_1 = Pin(5, Pin.IN, Pin.PULL_UP)
+#button_2 = Pin(6, Pin.IN, Pin.PULL_UP)
+
 led = Pin(25, Pin.OUT)
 
 # https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
@@ -58,19 +61,25 @@ oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
 NUMBER_OF_SENSORS = 1
 MIN_DIST = 2
 MAX_DIST = 100
+SPEED_SOUND_20C_70H = 343.294
+
 dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)
 dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)
 dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)
 dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)
 
+interrupt_1_flag=0
+interrupt_2_flag=0
+debounce_1_time=0
+debounce_2_time=0
+
 #  DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
 # then replace ", 0"  with "\"
 # const unsigned char bitmap_artcar_image[] PROGMEM = {0xc9, 0x04, 0x59, ...
-# goes to bitmap_artcar_image=bytearray(b'\xc9\x04\x59
+# can be bitmap_artcar_image=bytearray(b'\xc9\x04\x59
 
 # 'art-car-imag', 56x15px
-#bitmap_artcar_image=bytearray(b'\xc9\x04\x59\x11\x0c\x08\x43\xc8\x82\x8e\x90\x93\x10\x93\xe0\x63\x00\x78\xe0\xe3\x07\xff\x9f\xff\xff\xff\xfc\xff\xc0\x00\x00\x00\x00\x00\x03\x40\x1c\xf3\xe3\x8e\x78\x02\x47\x22\x88\x84\x51\x44\xe2\x45\x22\x88\x84\x11\x44\xa2\x47\x22\xf0\x84\x11\x78\xe2\x20\x3e\x88\x84\x1f\x44\x04\x10\x22\x88\x84\x51\x44\x08\x0c\x22\x88\x83\x91\x44\x30\x03\x00\x00\x00\x00\x00\xc0\x00\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00')
 bitmap_artcar_image = bytearray([
   0xc9, 0x04, 0x59, 0x11, 0x0c, 0x08, 0x43, 0xc8, 0x82, 0x8e, 0x90, 0x93, 0x10, 0x93, 0xe0, 0x63,
   0x00, 0x78, 0xe0, 0xe3, 0x07, 0xff, 0x9f, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xc0, 0x00, 0x00, 0x00,
@@ -81,16 +90,29 @@ bitmap_artcar_image = bytearray([
   0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 ])
 
-loopTime = time.ticks_ms()
-# init speed_sound if dht22 sensor fails
-speed_sound = 344.11
-temp_c = 0.0
-humidity = 0.0
 
-rear_sensors = False
+
+rear = False
 metric = False
 error_state = False
 debug = False
+
+# Button debouncer
+# https://electrocredible.com/raspberry-pi-pico-external-interrupts-button-micropython/
+def callback_1(pin):
+    global interrupt_1_flag, debounce_1_time
+    if (time.ticks_ms()-debounce_1_time) > 500:
+        interrupt_1_flag= 1
+        debounce_1_time=time.ticks_ms()
+        
+# def callback_2(pin):
+#     global interrupt_2_flag, debounce_2_time
+#     if (time.ticks_ms()-debounce_2_time) > 500:
+#         interrupt_2_flag= 1
+#         debounce_2_time=time.ticks_ms()
+
+button_1.irq(trigger=Pin.IRQ_FALLING, handler=callback_1)
+# button_2.irq(trigger=Pin.IRQ_FALLING, handler=callback_2)
 
 
 def blink(timer):
@@ -105,8 +127,10 @@ def blink(timer):
     global led
     led.toggle()
     
-def calc_speed_sound(temp_c, humidity):
+def calc_speed_sound():
     global error_state, debug
+    # Initialize local variables
+    
     #update speed of sound using temp & humidity from dht22
     try:
         dht_sensor.measure()
@@ -119,7 +143,7 @@ def calc_speed_sound(temp_c, humidity):
         # created spreadsheet of diffs between online temp/humid and temp formula
         # did a 2d linear fit to create my own correction, error is now +/-0.07%
         # valid for 0C to 30C temp & 75 to 102 kPa pressure
-        speed_sound = (20.05 * math.sqrt(273.16 + temp_c)) \
+        speed_sound = (20.05 * sqrt(273.16 + temp_c)) \
                       + (0.0006545 * humidity + 0.00475) * temp_c \
                       + (0.001057 * humidity + 0.07121)
 
@@ -130,7 +154,7 @@ def calc_speed_sound(temp_c, humidity):
             print(f"Speed Sound: {speed_sound:.1f} m/s\n")
     except Exception as e:
         print("Error reading DHT22:", str(e))
-    return(speed_sound)
+    return(speed_sound, temp_c, temp_f, humidity)
 
     
 def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
@@ -176,7 +200,7 @@ def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
     # Calculate cm distance
     return (signal_on - signal_off) * (speed / 20000.0)
 
-def display_environment(temp_c, humidity, speed_sound, dist):
+def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
     global metric, error_state, debug
     
     # never display text upside down
@@ -191,10 +215,10 @@ def display_environment(temp_c, humidity, speed_sound, dist):
         oled.text(f"Humid= {humidity:.1f}%", 0, 12)
         if metric:
             oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
-            oled.text(f"Dist= {dist:.1f}cm", 0, 55)
+            oled.text(f"Dist= {dist:.0f}cm", 0, 55)
         else:
             oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
-            oled.text(f"Dist= {dist/2.54:.0f}in", 0, 55)
+            oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
         
         fb = framebuf.FrameBuffer(bitmap_artcar_image,56,15, framebuf.MONO_HLSB)
         oled.blit(fb,22,36)
@@ -211,10 +235,10 @@ def display_environment(temp_c, humidity, speed_sound, dist):
 # startup code
 print("Starting...")
 print("====================================")
-print(sys.implementation[0], os.uname()[3],
-      "\nrun on", os.uname()[4])
+print(implementation[0], uname()[3],
+      "\nrun on", uname()[4])
 print("====================================")
-print(f"Default Speed Sound: {speed_sound:.1f} m/s\n")
+print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
 # if want blinking happening in background
 #timecall = Timer()
 #timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
@@ -225,6 +249,10 @@ fb = framebuf.FrameBuffer(bitmap_artcar_image,56,15, framebuf.MONO_HLSB)
 oled.blit(fb,40,8)
 oled.show()
 zzz(1)
+
+temp_c = 0.0
+humidity = 0.0
+speed_sound = SPEED_SOUND_20C_70H
 
 # check status of DHT sensor
 try:
@@ -251,8 +279,21 @@ except Exception as e:
 '''
 
 # main loop
-while True:    
-# error with micropython rotate call oled.rotate display will rotate but can not be unrotated
+loop_time = time.ticks_ms()
+while True:
+    elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
+    # Button 1
+    if interrupt_1_flag is 1:
+        interrupt_1_flag=0
+        if debug: print("button 1 Interrupt Detected: in/cm")
+        metric = not metric  # Toggle between metric and imperial units
+
+    # Button 2
+    if interrupt_2_flag is 1:
+        interrupt_2_flag=0
+        if debug: print("button 2 Interrupt Detected: rear/front")
+        rear = not rear  # Toggle between rear /front
+# rotate error in micropython: oled.rotate display will rotate but can not be unrotated
 #     if rear_sensors:
 #         oled.rotate(False)
 #     else:
@@ -260,21 +301,17 @@ while True:
 #    oled.rotate(True)
 #    oled.rotate(False)
 
-    elapsed_time = time.ticks_diff(time.ticks_ms(), loopTime)
-    #if elapsed_time > 4000:
-    if True:
-        #print("Elapsed time:", elapsed_time, "msec\n")
-        loopTime = time.ticks_ms()
+    # every 3 sec, calc speed of sound based on temp & humidity
+    if elapsed_time > 3000:
+        loop_time = time.ticks_ms()
+        speed_sound, temp_c, temp_f, humidity = calc_speed_sound()
         
-        # calc speed of sound based on temp & humidity
-        speed_sound = calc_speed_sound(temp_c, humidity)
-        
-        #get distance from ultrasonic sensor
-        dist = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
-        
-        # update dispay with results
-        display_environment(temp_c, humidity, speed_sound, dist)
+    #get distance from ultrasonic sensor
+    dist = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
+    
+    # update dispay with results
+    display_environment(temp_c, temp_f, humidity, speed_sound, dist)
     #
     #Every loop do this
     led.toggle()
-    time.sleep_ms(500)
+    time.sleep_ms(300)
