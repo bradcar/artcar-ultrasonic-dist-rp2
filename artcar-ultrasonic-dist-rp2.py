@@ -441,8 +441,8 @@ def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
         oled.show()
         return
     
-def display_car ():
-    global metric, error_state, debug
+def display_car (distance):
+    global metric, error_state, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
     
     oled.fill(0)
     if rear:
@@ -456,21 +456,43 @@ def display_car ():
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, 0)
             oled.text(f"{temp_f:.0f}", 108, 2)
     
-    # NEED FIX black pixels overwrite white, need to 'or' the bits together
-    oled.blit(FrameBuffer(bitmap_sensor_01_a_on, 32, 14, MONO_HLSB), 24, 17) 
-    oled.blit(FrameBuffer(bitmap_sensor_01_b_on, 32, 16, MONO_HLSB), 21, 25) 
-    oled.blit(FrameBuffer(bitmap_sensor_01_c_on, 32, 17, MONO_HLSB), 18, 34)
-    oled.blit(FrameBuffer(bitmap_sensor_01_d_on, 32, 18, MONO_HLSB), 16, 43)
+#     # NEED FIX black pixels overwrite white, need to 'or' the bits together
+#     oled.blit(FrameBuffer(bitmap_sensor_01_a_on, 32, 14, MONO_HLSB), 24, 17) 
+#     oled.blit(FrameBuffer(bitmap_sensor_01_b_on, 32, 16, MONO_HLSB), 21, 25) 
+#     oled.blit(FrameBuffer(bitmap_sensor_01_c_on, 32, 17, MONO_HLSB), 18, 34)
+#     oled.blit(FrameBuffer(bitmap_sensor_01_d_on, 32, 18, MONO_HLSB), 16, 43)
+# 
+#     oled.blit(FrameBuffer(bitmap_sensor_02_a_on, 32,  9, MONO_HLSB), 48, 23)
+#     oled.blit(FrameBuffer(bitmap_sensor_02_b_on, 32,  9, MONO_HLSB), 48, 33)
+#     oled.blit(FrameBuffer(bitmap_sensor_02_c_on, 32, 10, MONO_HLSB), 47, 42)
+#     oled.blit(FrameBuffer(bitmap_sensor_02_d_on, 40, 10, MONO_HLSB), 42, 52) 
+# 
+#     oled.blit(FrameBuffer(bitmap_sensor_03_a_on, 32, 14, MONO_HLSB), 72, 17)
+#     oled.blit(FrameBuffer(bitmap_sensor_03_b_on, 32, 16, MONO_HLSB), 74, 25)
+#     oled.blit(FrameBuffer(bitmap_sensor_03_c_on, 32, 17, MONO_HLSB), 77, 34)
+#     oled.blit(FrameBuffer(bitmap_sensor_03_d_on, 32, 18, MONO_HLSB), 80, 43)
 
-    oled.blit(FrameBuffer(bitmap_sensor_02_a_on, 32,  9, MONO_HLSB), 48, 23)
-    oled.blit(FrameBuffer(bitmap_sensor_02_b_on, 32,  9, MONO_HLSB), 48, 33)
-    oled.blit(FrameBuffer(bitmap_sensor_02_c_on, 32, 10, MONO_HLSB), 47, 42)
-    oled.blit(FrameBuffer(bitmap_sensor_02_d_on, 40, 10, MONO_HLSB), 42, 52) 
-
-    oled.blit(FrameBuffer(bitmap_sensor_03_a_on, 32, 14, MONO_HLSB), 72, 17)
-    oled.blit(FrameBuffer(bitmap_sensor_03_b_on, 32, 16, MONO_HLSB), 74, 25)
-    oled.blit(FrameBuffer(bitmap_sensor_03_c_on, 32, 17, MONO_HLSB), 77, 34)
-    oled.blit(FrameBuffer(bitmap_sensor_03_d_on, 32, 18, MONO_HLSB), 80, 43)
+# Display bitmap for step 01
+    if distance > dist_step_01:
+        oled.blit(FrameBuffer(bitmap_sensor_02_a_on, 32, 9, MONO_HLSB), 48, 23)
+    else:
+        oled.blit(FrameBuffer(bitmap_sensor_02_a_off, 32, 9, MONO_HLSB), 48, 23)
+    if distance > dist_step_02:
+        oled.blit(FrameBuffer(bitmap_sensor_02_b_on, 32, 9, MONO_HLSB), 48, 33)
+    else:
+        oled.blit(FrameBuffer(bitmap_sensor_02_b_off, 32, 9, MONO_HLSB), 48, 33)
+    if distance > dist_step_03:
+        oled.blit(FrameBuffer(bitmap_sensor_02_c_on, 32, 10, MONO_HLSB), 47, 42)
+    else:
+        oled.blit(FrameBuffer(bitmap_sensor_02_c_off, 32, 10, MONO_HLSB), 47, 42)
+    if distance > dist_step_04:
+        oled.blit(FrameBuffer(bitmap_sensor_02_d_on, 40, 10, MONO_HLSB), 42, 52)
+    else:
+        oled.blit(FrameBuffer(bitmap_sensor_02_d_off, 40, 10, MONO_HLSB), 42, 52)
+    if metric:
+        oled.text(f"{distance:.0f}cm", 0, 56)
+    else:
+        oled.text(f"{distance/2.54:.1f}in", 0, 56)
       
 #         # Adjust text position based on length
 #         if oled.text(buffer, 106, 2) == 18:
@@ -525,7 +547,7 @@ temp_c = 20.56
 temp_f = 69.0
 humidity = 70.0
 speed_sound = SPEED_SOUND_20C_70H
-display_car()
+display_car(0)
 zzz(5)
 
 # check status of DHT sensor
@@ -583,11 +605,11 @@ while True:
     #get distance from ultrasonic sensor
     dist = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
     
-    # update dispay with results
-    display_environment(temp_c, temp_f, humidity, speed_sound, dist)
-    
-#     # dispay car --- PRELIM - PARTIAL IMPLEMENTATion
-#     display_car()
+#     # update dispay with results
+#     display_environment(temp_c, temp_f, humidity, speed_sound, dist)
+#     
+    # dispay car --- PRELIM - PARTIAL IMPLEMENTATion
+    display_car(dist)
     #
     #Every loop do this
     led.toggle()
