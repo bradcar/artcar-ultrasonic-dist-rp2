@@ -1,14 +1,14 @@
 # Raspberry Pi Pico 2 project - ArtCar ultrasonic - Oct 2024
 #
-# BUT right now only 1 ultrasonic, oled SPI displays: temp, humid, speedsound, & dist
+# BUT right now only 1 ultrasonic, oled SPI display: temp,humid,speedsound, & dist
 #
-#   based on Brad's Arduino UNO and 128x64 OLED Display for rear&front parking sensor
-#      - speed of sound with temp & humidity correction
-#      - front & Rear facing changed with button
-#      - in/cm F/C changed with button
-#      - buttons are all interrupt driven for debounce
-#      Raspberry Pi GitHub: https://github.com/bradcar/artcar-ultrasonic-dist-rp2
-#      Arduino GitHub:      https://github.com/bradcar/art-car-ultrasonic-dist
+# based on Brad's Arduino UNO and 128x64 OLED Display for rear&front parking sensor
+#    - speed of sound with temp & humidity correction
+#    - front & Rear facing changed with button
+#    - in/cm F/C changed with button
+#    - buttons are all interrupt driven for debounce
+#    Raspberry Pi GitHub: https://github.com/bradcar/artcar-ultrasonic-dist-rp2
+#    Arduino GitHub:      https://github.com/bradcar/art-car-ultrasonic-dist
 #
 # project Based on GREAT work by upir!!!
 #     youtube full video: https://youtu.be/gg08H-6Z1Lo
