@@ -14,4 +14,4 @@ Other Useful sites:
 * image2cpp (convert images into C code): https://javl.github.io/image2cpp/
 * MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
 * Powering Pico: https://www.youtube.com/watch?v=3PH9jzRsb5E -- Useful because I'm going to need 3.3v for Pico, 5v for ultrasonics, and power in my car.
-* Going to use: Foriot's TXS0108E 8 Channel Level Converter Module Support 3.3V to 5V to protect Pico from 5v signals (Ultrasonic's and SSD1306) https://www.amazon.com/gp/product/B0CFL9KN7L
+* Going to use: Foriot's TXS0108E 8 Channel Level Converter Module Support 3.3V to 5V to protect Pico from 5v signals (Ultrasonic's and SSD1306 SDI is fast so I need one that can keep up) https://www.amazon.com/gp/product/B0CFL9KN7L
