@@ -604,6 +604,7 @@ speed_sound = SPEED_SOUND_20C_70H
 display_car()
 zzz(5)
 
+
 # check status of DHT sensor
 try:
     dht_sensor.measure()
@@ -642,14 +643,8 @@ while True:
     if interrupt_2_flag is 1:
         interrupt_2_flag=0
         if debug: print("button 2 Interrupt Detected: rear/front")
-        rear = not rear  # Toggle between rear /front
-# rotate error in micropython: oled.rotate display will rotate but can not be unrotated
-#     if rear_sensors:
-#         oled.rotate(False)
-#     else:
-#         oled.rotate(True)     
-#    oled.rotate(True)
-#    oled.rotate(False)
+        rear = not rear   # Toggle between rear /front
+        oled.rotate(True) # Ttue means turn in 180 from where was
 
     # every 3 sec, calc speed of sound based on temp & humidity
     if elapsed_time > 3000:
