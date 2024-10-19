@@ -15,6 +15,7 @@
 #     created by upir, 2022
 #
 # https://micropython.org/download/RPI_PICO2/ for latest .uf2 preview
+# https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
 
 from machine import Pin, Timer
 import machine
@@ -368,7 +369,6 @@ def constrain(val, min_val, max_val):
     return max(min_val, min(val, max_val))
 
 def map_range(value, in_min, in_max, out_min, out_max):
-    # Equivalent of the Arduino map() function
     return int((value - in_min) * (out_max - out_min) // (in_max - in_min) + out_min)
 
 def get_str_width(text):
@@ -562,7 +562,7 @@ def display_car ():
             print(f"for i={i} str={int_string} at xpos={xpos}, ypos={ypos}")
             print(xpos-1, ypos-1, xpos+9, ypos+9)
         #black filled rectangle behind digits, ERROR way to big???
-#         oled.fill_rect(xpos-1, ypos-1, xpos+9, ypos+9, 0) 
+#        oled.fill_rect(xpos-1, ypos-1, xpos+9, ypos+9, 0) 
         oled.text(f"{int_string}", xpos, ypos)
         if debug: oled.text(int_string, 0, 56)
       
@@ -572,7 +572,7 @@ def display_car ():
 #         oled.blit(degree_temp_flip, 0, 0)           # Draw flipped temperature symbol
 #         
 #         if inches:
-#             oled.blit(bitmap_unit_in, 104, 0)
+#             oled.blit(bitmap_unit_inch, 104, 0)
 #             buffer = str(tempFint)
 #             negflag = tempFint < 0
 #         else:
