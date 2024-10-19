@@ -666,8 +666,8 @@ while True:
         speed_sound, temp_c, temp_f, humidity = calc_speed_sound()
     
     for i in [1]:
-        #get distance from ultrasonic sensor
-        sensor[i].cm = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
+        #get distance from ultrasonic sensor, 30ms round trip 514cm or 202in
+        sensor[i].cm = ultrasonic_distance(speed_sound, timeout=30000)
         sensor[i].inch = sensor[i].cm/2.54
     # dummy up three sensors
     sensor[0].cm = sensor[1].cm
