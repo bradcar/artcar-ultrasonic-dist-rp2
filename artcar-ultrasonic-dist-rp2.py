@@ -574,11 +574,9 @@ def display_car ():
 #         if inches:
 #             oled.blit(bitmap_unit_inch, 104, 0)
 #             buffer = str(tempFint)
-#             negflag = tempFint < 0
 #         else:
 #             oled.blit(bitmap_unit_cm, 104, 0)
 #             buffer = str(tempCint)
-#             negflag = tempCint < 0
 #         
 #         # Adjust text position based on length (rotated)
 #         if oled.text(buffer, 21, 7) == 18:
@@ -588,8 +586,6 @@ def display_car ():
 # 
     oled.show()  # Refresh the display
     return
-
-
 
 # projects: https://www.tomshardware.com/news/raspberry-pi
 # make own fonts: https://www.youtube.com/watch?v=kxlN1knBpQ0 modified short_writer.py
@@ -617,7 +613,7 @@ speed_sound = SPEED_SOUND_20C_70H
 display_car()
 zzz(5)
 
-
+# ??? Should check for ultrasonic errors?
 # check status of DHT sensor
 try:
     dht_sensor.measure()
@@ -631,30 +627,19 @@ except Exception as e:
     temp_c = temp_f = humidity = speed_sound = 0.0  # Reset to default
     error_state = True
 
-'''
-Todo; think about ultrasonic errors and fix this
-try:
-    ultrasonic_distance(speed_sound, timeout=30000)
-except Exception as e:
-    oled.text("Error ultrasonic", 0, 24)
-    #oled.text(str(e), 0, 36)
-    oled.show()
-    error_state = True
-'''
-
 # main loop
 loop_time = time.ticks_ms()
 while True:
     elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
     # Button 1
-    if interrupt_1_flag is 1:
-        interrupt_1_flag=0
+    if interrupt_1_flag == 1:
+        interrupt_1_flag = 0
         if debug: print("button 1 Interrupt Detected: in/cm")
         metric = not metric  # Toggle between metric and imperial units
 
     # Button 2
-    if interrupt_2_flag is 1:
-        interrupt_2_flag=0
+    if interrupt_2_flag == 1:
+        interrupt_2_flag = 0
         if debug: print("button 2 Interrupt Detected: rear/front")
         rear = not rear   # Toggle between rear /front
         oled.rotate(True) # True means turn in 180 from where was
@@ -669,7 +654,7 @@ while True:
         sensor[i].cm = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
         sensor[i].inch = sensor[1].cm/2.54
     
-#         # update dispay with results
+#         # update display with results
 #         display_environment(temp_c, temp_f, humidity, speed_sound, sensor[i].cm)
 
         # dispay car --- PRELIM - PARTIAL IMPLEMENTATion
