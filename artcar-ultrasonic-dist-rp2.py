@@ -344,7 +344,7 @@ degree_temp_flip = bytearray([
 rear = True
 metric = False
 error_state = False
-debug = True
+debug = False
 
 # Button debouncer
 # https://electrocredible.com/raspberry-pi-pico-external-interrupts-button-micropython/
@@ -464,8 +464,7 @@ def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
 def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
     global metric, error_state, debug
     
-    # never display text upside down
-#     oled.rotate(True)
+    oled.fill(0)
     if not error_state:
         temp_f = (temp_c * 9.0 / 5.0) + 32.0
         oled.fill(0)
@@ -481,13 +480,13 @@ def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
             oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
             oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
         
-        oled.blit(FrameBuffer(bitmap_artcar_image,56,15, MONO_HLSB),22,36)
-        oled.show()
-        return
+    oled.blit(FrameBuffer(bitmap_artcar_image,56,15, MONO_HLSB),22,36)
+    oled.show()
+    return
     
 def display_car ():
     global metric, error_state, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
-    
+
     oled.fill(0)
     if rear:
         oled.blit(FrameBuffer(bitmap_artcar_image,56,15, MONO_HLSB), 36, 0)  # Draw car image
@@ -498,6 +497,16 @@ def display_car ():
             oled.text(f"{temp_c:.0f}", 108, 2)
         else:
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, 0)
+            oled.text(f"{temp_f:.0f}", 108, 2)
+    else:
+        oled.blit(FrameBuffer(bitmap_artcar_image_flip,56,15, MONO_HLSB), 36, 0)  # Draw car image
+        oled.blit(FrameBuffer(degree_temp_flip,24,10, MONO_HLSB), 104, 0)         # Draw temperature symbol
+        
+        if metric:
+            oled.blit(FrameBuffer(bitmap_unit_cm_flip,24,10, MONO_HLSB), 0, 0)
+            oled.text(f"{temp_c:.0f}", 108, 2)
+        else:
+            oled.blit(FrameBuffer(bitmap_unit_in_flip,24,10, MONO_HLSB), 0, 0)
             oled.text(f"{temp_f:.0f}", 108, 2)
     
 #     # NEED FIX black pixels overwrite white, need to 'or' the bits together
@@ -648,23 +657,24 @@ while True:
         interrupt_2_flag=0
         if debug: print("button 2 Interrupt Detected: rear/front")
         rear = not rear   # Toggle between rear /front
-        oled.rotate(True) # Ttue means turn in 180 from where was
+        oled.rotate(True) # True means turn in 180 from where was
 
     # every 3 sec, calc speed of sound based on temp & humidity
     if elapsed_time > 3000:
         loop_time = time.ticks_ms()
         speed_sound, temp_c, temp_f, humidity = calc_speed_sound()
-        
-    #get distance from ultrasonic sensor
-    sensor[1].cm = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
-    sensor[1].inch = sensor[1].cm/2.54
     
-#     # update dispay with results
-#     display_environment(temp_c, temp_f, humidity, speed_sound, dist)
-#
-    # dispay car --- PRELIM - PARTIAL IMPLEMENTATion
-    display_car()
-    #
+    for i in [1]:
+        #get distance from ultrasonic sensor
+        sensor[i].cm = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
+        sensor[i].inch = sensor[1].cm/2.54
+    
+#         # update dispay with results
+#         display_environment(temp_c, temp_f, humidity, speed_sound, sensor[i].cm)
+
+        # dispay car --- PRELIM - PARTIAL IMPLEMENTATion
+        display_car()
+
     #Every loop do this
     led.toggle()
     time.sleep_ms(300)
