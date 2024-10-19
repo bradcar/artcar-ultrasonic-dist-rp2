@@ -34,39 +34,47 @@ from framebuf import FrameBuffer, MONO_HLSB
 
 #gc.collect() before executing gc.mem_free()
 
-# pins
-# https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
-# i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
-# oled = SSD1306_I2C(128, 64, i2c)
-
-dht_pin = machine.Pin(2)
-trigger = Pin(3, Pin.OUT)
-echo = Pin(4, Pin.IN)
-button_1 = Pin(5, Pin.IN, Pin.PULL_UP)
-#button_2 = Pin(6, Pin.IN, Pin.PULL_UP)
-
-led = Pin(25, Pin.OUT)
-
-# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
-# spi pins 10,11,12, 13
-# scl (SCLK) gp10 
-# SDA (MOSI) gp11
-# RES (RST)  gp12
-# DC         gp13
-# CS dummy (not connected but assigned gp8
-cs  = machine.Pin(9)    #dummy (any un-used pin), no connection
-res = machine.Pin(12)
-dc  = machine.Pin(13)
-dht_sensor = dht.DHT22(dht_pin)
-
-oled_spi = machine.SPI(1)
-print("oled_spi:", oled_spi)
-oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
-
 # Constants and setup
-NUMBER_OF_SENSORS = 1
-MIN_DIST = 2
-MAX_DIST = 100
+
+# Define the number of sensors
+NUMBER_OF_SENSORS = 3
+
+class SensorData:
+    def __init__(self, echo_pin, trig_pin):
+        self.trig_pin = trig_pin    # TRIG pin for the ultrasonic distance sensor
+        self.echo_pin = echo_pin    # ECHO pin for the ultrasonic distance sensor
+        self.measured_ms = 0        # measured milliseconds
+        self.cm = 0.0               # measured distance in CM
+        self.inch = 0.0             # measured distance in inches
+        self.label_xpos = 0         # x position of the distance label
+        self.label_ypos = 0         # y position of the distance label
+        self.label_width = 0        # calculated width of the distance string
+        self.label_startpos_x = 0   # start X position for the label
+        self.label_startpos_y = 0   # start Y position for the label
+        self.label_endpos_x = 0     # end X position for the label
+        self.label_endpos_y = 0     # end Y position for the label
+
+# Create a list to hold the sensor data for each sensor
+sensor = [SensorData(trig_pin=0, echo_pin=0),
+           SensorData(trig_pin=3, echo_pin=4),
+           SensorData(trig_pin=0, echo_pin=0)]
+
+#initialize label position data were manually defined in the Photoshop
+sensor[0].label_startpos_x = 41
+sensor[0].label_startpos_y = 20
+sensor[0].label_endpos_x = 30
+sensor[0].label_endpos_y = 58
+sensor[1].label_startpos_x = 51  # 52px 3 dig, 56 2 dig, 60 for 1 digit, was 63
+sensor[1].label_startpos_y = 23
+sensor[1].label_endpos_x = 51    # 52px 3 dig, 56 2 dig, 60 for 1 digit, was 63
+sensor[1].label_endpos_y = 59    # was 60
+sensor[2].label_startpos_x = 85
+sensor[2].label_startpos_y = 20
+sensor[2].label_endpos_x = 97
+sensor[2].label_endpos_y = 57
+
+MIN_DIST = 2.0
+MAX_DIST = 100.0
 SPEED_SOUND_20C_70H = 343.294
 
 dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)
@@ -78,6 +86,30 @@ interrupt_1_flag=0
 interrupt_2_flag=0
 debounce_1_time=0
 debounce_2_time=0
+
+# PINS
+# https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
+# i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+# oled = SSD1306_I2C(128, 64, i2c)
+
+dht_pin = machine.Pin(2)
+trigger = Pin(sensor[1].trig_pin, Pin.OUT)
+echo = Pin(sensor[1].echo_pin, Pin.IN)
+button_1 = Pin(5, Pin.IN, Pin.PULL_UP)
+#button_2 = Pin(6, Pin.IN, Pin.PULL_UP)
+led = Pin(25, Pin.OUT)
+
+# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
+cs  = machine.Pin(9)    #dummy (any un-used pin), no connection
+# scl (SCLK) gp10 
+# SDA (MOSI) gp11
+res = machine.Pin(12)   # RES (RST)  gp12
+dc  = machine.Pin(13)   # DC         gp13
+dht_sensor = dht.DHT22(dht_pin)
+
+oled_spi = machine.SPI(1)
+print("oled_spi:", oled_spi)
+oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
 
 #  DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
@@ -312,7 +344,7 @@ degree_temp_flip = bytearray([
 rear = True
 metric = False
 error_state = False
-debug = False
+debug = True
 
 # Button debouncer
 # https://electrocredible.com/raspberry-pi-pico-external-interrupts-button-micropython/
@@ -330,6 +362,18 @@ def callback_1(pin):
 
 button_1.irq(trigger=Pin.IRQ_FALLING, handler=callback_1)
 # button_2.irq(trigger=Pin.IRQ_FALLING, handler=callback_2)
+
+# Helper functions to replace Arduino-specific functions
+def constrain(val, min_val, max_val):
+    return max(min_val, min(val, max_val))
+
+def map_range(value, in_min, in_max, out_min, out_max):
+    # Equivalent of the Arduino map() function
+    return int((value - in_min) * (out_max - out_min) // (in_max - in_min) + out_min)
+
+def get_str_width(text):
+    # In MicroPython has 8x8 fonts  x*9-1 ?
+    return len(text) 
 
 
 def blink(timer):
@@ -441,7 +485,7 @@ def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
         oled.show()
         return
     
-def display_car (distance):
+def display_car ():
     global metric, error_state, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
     
     oled.fill(0)
@@ -473,32 +517,42 @@ def display_car (distance):
 #     oled.blit(FrameBuffer(bitmap_sensor_03_d_on, 32, 18, MONO_HLSB), 80, 43)
 
 # Display bitmap for step 01
-    if distance > dist_step_01:
+    if sensor[1].cm > dist_step_01:
         oled.blit(FrameBuffer(bitmap_sensor_02_a_on, 32, 9, MONO_HLSB), 48, 23)
     else:
         oled.blit(FrameBuffer(bitmap_sensor_02_a_off, 32, 9, MONO_HLSB), 48, 23)
-    if distance > dist_step_02:
+    if sensor[1].cm > dist_step_02:
         oled.blit(FrameBuffer(bitmap_sensor_02_b_on, 32, 9, MONO_HLSB), 48, 33)
     else:
         oled.blit(FrameBuffer(bitmap_sensor_02_b_off, 32, 9, MONO_HLSB), 48, 33)
-    if distance > dist_step_03:
+    if sensor[1].cm > dist_step_03:
         oled.blit(FrameBuffer(bitmap_sensor_02_c_on, 32, 10, MONO_HLSB), 47, 42)
     else:
         oled.blit(FrameBuffer(bitmap_sensor_02_c_off, 32, 10, MONO_HLSB), 47, 42)
-    if distance > dist_step_04:
+    if sensor[1].cm > dist_step_04:
         oled.blit(FrameBuffer(bitmap_sensor_02_d_on, 40, 10, MONO_HLSB), 42, 52)
     else:
         oled.blit(FrameBuffer(bitmap_sensor_02_d_off, 40, 10, MONO_HLSB), 42, 52)
-    if metric:
-        oled.text(f"{distance:.0f}cm", 0, 56)
-    else:
-        oled.text(f"{distance/2.54:.1f}in", 0, 56)
+
+#    for i in range(NUMBER_OF_SENSORS):
+    for i in [1]:
+        if metric:
+            int_string = str(int(sensor[i].cm))
+        else:
+            int_string = str(int(sensor[i].inch))
+        digits = get_str_width(int_string)
+        startpos_x = sensor[i].label_startpos_x + (3-digits)*4
+        endpos_x = sensor[i].label_endpos_x + (3-digits)*4
+        
+        # Display distance label    
+        xpos = int(map_range(constrain(sensor[i].cm, MIN_DIST, MAX_DIST),
+                                          MIN_DIST, MAX_DIST, startpos_x, endpos_x))
+        ypos = int(map_range(constrain(sensor[i].cm, MIN_DIST, MAX_DIST),
+                                          MIN_DIST, MAX_DIST, sensor[i].label_startpos_y, sensor[i].label_endpos_y))    
+        if debug: print(f"for i={i} str={int_string} at xpos={xpos}, ypos={ypos}")
+        oled.text(f"{int_string}", xpos, ypos)
+        if debug: oled.text(int_string, 0, 56)
       
-#         # Adjust text position based on length
-#         if oled.text(buffer, 106, 2) == 18:
-#             oled.text(buffer, 106, 2)  # Narrow text position
-#         else:
-#             oled.text(buffer, 112, 2)  # Wider text position
 #         
 #     else:
 #         oled.blit(bitmap_artcar_image_flip, 36, 0)  # Draw flipped car image
@@ -547,7 +601,7 @@ temp_c = 20.56
 temp_f = 69.0
 humidity = 70.0
 speed_sound = SPEED_SOUND_20C_70H
-display_car(0)
+display_car()
 zzz(5)
 
 # check status of DHT sensor
@@ -603,13 +657,14 @@ while True:
         speed_sound, temp_c, temp_f, humidity = calc_speed_sound()
         
     #get distance from ultrasonic sensor
-    dist = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
+    sensor[1].cm = ultrasonic_distance(speed_sound, timeout=30000)  # 30ms timeout 257cm
+    sensor[1].inch = sensor[1].cm/2.54
     
 #     # update dispay with results
 #     display_environment(temp_c, temp_f, humidity, speed_sound, dist)
-#     
+#
     # dispay car --- PRELIM - PARTIAL IMPLEMENTATion
-    display_car(dist)
+    display_car()
     #
     #Every loop do this
     led.toggle()
