@@ -67,7 +67,7 @@ sensor[0].label_endpos_y = 58
 sensor[1].label_startpos_x = 51  # 52px 3 dig, 56 2 dig, 60 for 1 digit, was 63
 sensor[1].label_startpos_y = 23
 sensor[1].label_endpos_x = 51    # 52px 3 dig, 56 2 dig, 60 for 1 digit, was 63
-sensor[1].label_endpos_y = 59    # was 60
+sensor[1].label_endpos_y = 56    # was 60
 sensor[2].label_startpos_x = 85
 sensor[2].label_startpos_y = 20
 sensor[2].label_endpos_x = 97
@@ -549,7 +549,11 @@ def display_car ():
                                           MIN_DIST, MAX_DIST, startpos_x, endpos_x))
         ypos = int(map_range(constrain(sensor[i].cm, MIN_DIST, MAX_DIST),
                                           MIN_DIST, MAX_DIST, sensor[i].label_startpos_y, sensor[i].label_endpos_y))    
-        if debug: print(f"for i={i} str={int_string} at xpos={xpos}, ypos={ypos}")
+        if debug:
+            print(f"for i={i} str={int_string} at xpos={xpos}, ypos={ypos}")
+            print(xpos-1, ypos-1, xpos+9, ypos+9)
+        #black filled rectangle behind digits, ERROR way to big???
+#         oled.fill_rect(xpos-1, ypos-1, xpos+9, ypos+9, 0) 
         oled.text(f"{int_string}", xpos, ypos)
         if debug: oled.text(int_string, 0, 56)
       
