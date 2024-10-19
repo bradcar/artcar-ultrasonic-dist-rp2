@@ -491,6 +491,42 @@ def flip_bitmap_vert(bitmap, width, height):
 
     return flipped_bitmap
 
+
+def blit_white_only(oled, source_fb, w, h, x, y):
+    """
+    only send white pixels one by one
+    :param oled: display
+    :param source_fb:
+    :param w: width of the framebuffer
+    :param h: height of the framebuffer
+    :x: x-position for display
+    :x: y-position for display
+    """
+    for row in range(h):
+        for col in range(w):
+            # Extract pixel from the source frame buffer
+            pixel = source_fb.pixel(col, row)
+            if pixel == 1:  # Only copy white pixels
+                oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
+
+def blit_white_only_flip(oled, source_fb, w, h, x, y):
+    """
+    Blit the frame buffer as if it is vertically flipped, and only send white pixels one by one.
+    :param oled: display
+    :param source_fb: source frame buffer
+    :param w: width of the framebuffer
+    :param h: height of the framebuffer
+    :param x: x-position for display
+    :param y: y-position for display
+    """
+    for row in range(h):
+        for col in range(w):
+            # Extract pixel from the vertically flipped source frame buffer
+            flipped_row = h - row - 1
+            pixel = source_fb.pixel(col, flipped_row)
+            if pixel == 1:  # Only copy white pixels
+                oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
+
     
 def display_car ():
     global metric, error_state, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
@@ -507,7 +543,7 @@ def display_car ():
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, 0)
             oled.text(f"{temp_f:.0f}", 108, 2)
 
-        # Display bitmap for step 01
+        # Display bitmap for sensor 2
         if sensor[1].cm > dist_step_01:
             oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32, 9, MONO_HLSB), 48, 23)
         else:
@@ -524,6 +560,68 @@ def display_car ():
             oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52)
         else:
             oled.blit(FrameBuffer(bitmap_sensor_2d_off, 40, 10, MONO_HLSB), 42, 52)
+        
+        # DO NOT LIKE THIS SOLUTION, but couldn't find anotehr way to only
+        # have white pixels updating screen, blit forces all pixes B & W to OLED
+        # NEED FIX black pixels overwrite white, need to 'or' the bits together
+#         oled.blit(FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB), 24, 17) 
+#         oled.blit(FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB), 21, 25) 
+#         oled.blit(FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB), 18, 34)
+#         oled.blit(FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB), 16, 43)
+# 
+#         oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32,  9, MONO_HLSB), 48, 23)
+#         oled.blit(FrameBuffer(bitmap_sensor_2b_on, 32,  9, MONO_HLSB), 48, 33)
+#         oled.blit(FrameBuffer(bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, 42)
+#         oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52) 
+# 
+#         oled.blit(FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB), 72, 17)
+#         oled.blit(FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB), 74, 25)
+#         oled.blit(FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB), 77, 34)
+#         oled.blit(FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB), 80, 43)
+
+        # Display bitmap for sensor 1
+        if sensor[1].cm > dist_step_01:
+            bmp_1a = FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 24, 17)
+        else:
+            bmp_1a = FrameBuffer(bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 24, 17)
+        if sensor[1].cm > dist_step_02:
+            bmp_1b = FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 21, 25)
+        else:
+            bmp_1b = FrameBuffer(bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 21, 25)
+        if sensor[1].cm > dist_step_03:
+            bmp_1c = FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 18, 34)
+        else:
+            bmp_1c = FrameBuffer(bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 18, 34)
+        if sensor[1].cm > dist_step_04:
+            bmp_1d = FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 16, 43)
+        else:
+            bmp_1d = FrameBuffer(bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 16, 43)
+        blit_white_only(oled, bmp_1a, 32, 14, 24, 17)
+        blit_white_only(oled, bmp_1b, 32, 16, 21, 25)
+        blit_white_only(oled, bmp_1c, 32, 17, 18, 34)
+        blit_white_only(oled, bmp_1d, 32, 18, 16, 43)
+
+        # Display bitmap for sensor 3
+        if sensor[1].cm > dist_step_01:
+            bmp_3a = FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+        else:
+            bmp_3a = FrameBuffer(bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+        if sensor[1].cm > dist_step_02:
+            bmp_3b = FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+        else:
+            bmp_3b = FrameBuffer(bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+        if sensor[1].cm > dist_step_03:
+            bmp_3c = FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+        else:
+            bmp_3c = FrameBuffer(bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+        if sensor[1].cm > dist_step_04:
+            bmp_3d = FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+        else:
+            bmp_3d = FrameBuffer(bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
+        blit_white_only(oled, bmp_3a, 32, 14, 72, 17)
+        blit_white_only(oled, bmp_3b, 32, 16, 74, 25)
+        blit_white_only(oled, bmp_3c, 32, 17, 77, 34)
+        blit_white_only(oled, bmp_3d, 32, 18, 80, 43)
     else:
         oled.blit(FrameBuffer(bitmap_artcar_image_front,56,15, MONO_HLSB), 36, DISP_HEIGHT-15)
         oled.blit(FrameBuffer(degree_temp,24,10, MONO_HLSB), 104, DISP_HEIGHT-10)
@@ -535,7 +633,7 @@ def display_car ():
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
             oled.text(f"{temp_f:.0f}", 108, DISP_HEIGHT-8)
             
-        # Display bitmap for step 01
+        # Display bitmap for aensor 2
         if sensor[1].cm > dist_step_01:
             flipped = flip_bitmap_vert(bitmap_sensor_2a_on, 32, 9)
             oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
@@ -560,22 +658,52 @@ def display_car ():
         else:
             flipped = flip_bitmap_vert(bitmap_sensor_2d_off, 40, 10)
             oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
-    
-#     # NEED FIX black pixels overwrite white, need to 'or' the bits together
-#     oled.blit(FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB), 24, 17) 
-#     oled.blit(FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB), 21, 25) 
-#     oled.blit(FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB), 18, 34)
-#     oled.blit(FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB), 16, 43)
-# 
-#     oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32,  9, MONO_HLSB), 48, 23)
-#     oled.blit(FrameBuffer(bitmap_sensor_2b_on, 32,  9, MONO_HLSB), 48, 33)
-#     oled.blit(FrameBuffer(bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, 42)
-#     oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52) 
-# 
-#     oled.blit(FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB), 72, 17)
-#     oled.blit(FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB), 74, 25)
-#     oled.blit(FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB), 77, 34)
-#     oled.blit(FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB), 80, 43)
+            
+        # Display bitmap for sensor 3 (notice using images for sendor 3
+        if sensor[1].cm > dist_step_01:
+            bmp_3a = FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+        else:
+            bmp_3a = FrameBuffer(bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+        if sensor[1].cm > dist_step_02:
+            bmp_3b = FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+        else:
+            bmp_3b = FrameBuffer(bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+        if sensor[1].cm > dist_step_03:
+            bmp_3c = FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+        else:
+            bmp_3c = FrameBuffer(bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+        if sensor[1].cm > dist_step_04:
+            bmp_3d = FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+        else:
+            bmp_3d = FrameBuffer(bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
+        blit_white_only_flip(oled, bmp_3a, 32, 14, 72, DISP_HEIGHT-17-14)
+        blit_white_only_flip(oled, bmp_3b, 32, 16, 74, DISP_HEIGHT-25-16)
+        blit_white_only_flip(oled, bmp_3c, 32, 17, 77, DISP_HEIGHT-34-17)
+        blit_white_only_flip(oled, bmp_3d, 32, 18, 80, DISP_HEIGHT-43-18)
+        
+        # Display bitmap for sensor 3 (notice using images for sendor 3
+        if sensor[1].cm > dist_step_01:
+            bmp_1a = FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+        else:
+            bmp_1a = FrameBuffer(bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+        if sensor[1].cm > dist_step_02:
+            bmp_1b = FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+        else:
+            bmp_1b = FrameBuffer(bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+        if sensor[1].cm > dist_step_03:
+            bmp_1c = FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+        else:
+            bmp_1c = FrameBuffer(bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+        if sensor[1].cm > dist_step_04:
+            bmp_1d = FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+        else:
+            bmp_1d = FrameBuffer(bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 80, 43)
+        blit_white_only_flip(oled, bmp_1a, 32, 14, 24, DISP_HEIGHT-17-14)
+        blit_white_only_flip(oled, bmp_1b, 32, 16, 21, DISP_HEIGHT-25-16)
+        blit_white_only_flip(oled, bmp_1c, 32, 17, 18, DISP_HEIGHT-34-17)
+        blit_white_only_flip(oled, bmp_1d, 32, 18, 16, DISP_HEIGHT-43-18)
+            
+            
 
 #    for i in range(NUMBER_OF_SENSORS):
     for i in [1]:
