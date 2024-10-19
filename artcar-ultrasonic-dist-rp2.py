@@ -36,17 +36,16 @@ from time import sleep as zzz
 from ssd1306 import SSD1306_SPI
 from framebuf import FrameBuffer, MONO_HLSB
 
-#gc.collect() before executing gc.mem_free()
-
 # Constants and setup
-
+DISP_WIDTH=128
+DISP_HEIGHT=64
 # Define the number of sensors
 NUMBER_OF_SENSORS = 3
 
 class SensorData:
     def __init__(self, echo_pin, trig_pin):
-        self.trig_pin = trig_pin    # TRIG pin for the ultrasonic distance sensor
-        self.echo_pin = echo_pin    # ECHO pin for the ultrasonic distance sensor
+        self.trig_pin = trig_pin    # TRIG pin for the ultrasonic distance 
+        self.echo_pin = echo_pin    # ECHO pin for the ultrasonic distance 
         self.measured_ms = 0        # measured milliseconds
         self.cm = 0.0               # measured distance in CM
         self.inch = 0.0             # measured distance in inches
@@ -64,7 +63,7 @@ sensor = [SensorData(trig_pin=0, echo_pin=0),
            SensorData(trig_pin=0, echo_pin=0)]
 
 #initialize label position data were manually defined in the Photoshop
-sensor[0].label_startpos_x = 30  # was 41
+sensor[0].label_startpos_x = 30  # was 41 (-11)
 sensor[0].label_startpos_y = 20
 sensor[0].label_endpos_x = 19    # was 30
 sensor[0].label_endpos_y = 56    # was 58
@@ -72,9 +71,9 @@ sensor[1].label_startpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 d
 sensor[1].label_startpos_y = 23
 sensor[1].label_endpos_x = 52    # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
 sensor[1].label_endpos_y = 56    # was 60
-sensor[2].label_startpos_x = 74  # was 85
+sensor[2].label_startpos_x = 74  # was 85 (-11)
 sensor[2].label_startpos_y = 20
-sensor[2].label_endpos_x = 86    # was 97
+sensor[2].label_endpos_x = 86    # was 97 (-11)
 sensor[2].label_endpos_y = 56    # was 57
 
 MIN_DIST = 2.0
@@ -94,13 +93,13 @@ debounce_2_time=0
 # PINS
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
 # i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
-# oled = SSD1306_I2C(128, 64, i2c)
+# oled = SSD1306_I2C(DISP_WIDTH, DISP_HEIGHT, i2c)
 
 dht_pin = machine.Pin(2)
 trigger = Pin(sensor[1].trig_pin, Pin.OUT)
 echo = Pin(sensor[1].echo_pin, Pin.IN)
 button_1 = Pin(5, Pin.IN, Pin.PULL_UP)
-#button_2 = Pin(6, Pin.IN, Pin.PULL_UP)
+button_2 = Pin(6, Pin.IN, Pin.PULL_UP)
 led = Pin(25, Pin.OUT)
 
 # https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
@@ -113,7 +112,7 @@ dht_sensor = dht.DHT22(dht_pin)
 
 oled_spi = machine.SPI(1)
 print("oled_spi:", oled_spi)
-oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
+oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
 
 #  DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
@@ -124,25 +123,25 @@ oled = SSD1306_SPI(128, 64, oled_spi, dc, res, cs)
 # NOTE: we have flip for upside down images for front sensor
 #
 # 'art-car-imag', 56x15px
-bitmap_artcar_image = bytearray([
-  0xc9, 0x04, 0x59, 0x11, 0x0c, 0x08, 0x43, 0xc8, 0x82, 0x8e, 0x90, 0x93, 0x10, 0x93, 0xe0, 0x63,
-  0x00, 0x78, 0xe0, 0xe3, 0x07, 0xff, 0x9f, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xc0, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x03, 0x40, 0x1c, 0xf3, 0xe3, 0x8e, 0x78, 0x02, 0x47, 0x22, 0x88, 0x84, 0x51, 0x44,
-  0xe2, 0x45, 0x22, 0x88, 0x84, 0x11, 0x44, 0xa2, 0x47, 0x22, 0xf0, 0x84, 0x11, 0x78, 0xe2, 0x20,
-  0x3e, 0x88, 0x84, 0x1f, 0x44, 0x04, 0x10, 0x22, 0x88, 0x84, 0x51, 0x44, 0x08, 0x0c, 0x22, 0x88,
-  0x83, 0x91, 0x44, 0x30, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0xff, 0xff, 0xff, 0xff,
+bitmap_artcar_image_back = bytearray([
+  0xc9, 0x04, 0x52, 0x91, 0x0c, 0x08, 0x43, 0xc8, 0x82, 0x8e, 0x90, 0x93, 0x10, 0x93, 0xe0, 0x63, 
+  0x08, 0x78, 0xe0, 0xe3, 0x07, 0xff, 0x9f, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xc0, 0x00, 0x00, 0x00, 
+  0x00, 0x00, 0x03, 0x40, 0x1c, 0xf3, 0xe3, 0x8e, 0x78, 0x02, 0x42, 0x22, 0x88, 0x84, 0x51, 0x44, 
+  0x42, 0x42, 0x22, 0x88, 0x84, 0x11, 0x44, 0x42, 0x42, 0x22, 0xf0, 0x84, 0x11, 0x78, 0x42, 0x22, 
+  0x3e, 0x88, 0x84, 0x1f, 0x44, 0x44, 0x10, 0x22, 0x88, 0x84, 0x51, 0x44, 0x08, 0x0c, 0x22, 0x88, 
+  0x83, 0x91, 0x44, 0x30, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0xff, 0xff, 0xff, 0xff, 
   0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 ])
 # for front sensor
 # 'art-car-image-flip', 56x15px
 bitmap_artcar_image_front = bytearray([
-  0xc9, 0x04, 0x59, 0x11, 0x0c, 0x08, 0x43, 0xc8, 0x82, 0x8e, 0x90, 0x93, 0x10, 0x93, 0xe0, 0x63,
-  0x00, 0x78, 0xe0, 0xe3, 0x07, 0xff, 0x9f, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xc0, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x03, 0x40, 0x22, 0x89, 0xc1, 0x11, 0x44, 0x02, 0x47, 0x22, 0x8a, 0x21, 0x11, 0x44,
-  0xe2, 0x45, 0x22, 0xf8, 0x21, 0x11, 0x7c, 0xa2, 0x47, 0x1e, 0x88, 0x21, 0x0f, 0x44, 0xe2, 0x20,
-  0x22, 0x88, 0x21, 0x11, 0x44, 0x04, 0x10, 0x22, 0x8a, 0x21, 0x11, 0x44, 0x08, 0x0c, 0x1e, 0x71,
-  0xc7, 0xcf, 0x38, 0x30, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0xff, 0xff, 0xff, 0xff,
-  0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x03, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0xc0, 0x0c, 0x1c, 0xf3, 0xe3, 0x8e, 0x78, 0x30, 0x10, 0x22, 0x88, 0x84, 
+  0x51, 0x44, 0x08, 0x20, 0x22, 0x88, 0x84, 0x11, 0x44, 0x04, 0x4f, 0x22, 0xf0, 0x84, 0x11, 0x78, 
+  0xf2, 0x4f, 0x3e, 0x88, 0x84, 0x1f, 0x44, 0xf2, 0x4f, 0x22, 0x88, 0x84, 0x51, 0x44, 0xf2, 0x40, 
+  0x22, 0x88, 0x83, 0x91, 0x44, 0x02, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xff, 0x9f, 0xff, 
+  0xff, 0xff, 0xf9, 0xff, 0xe0, 0x63, 0x08, 0x78, 0xe0, 0xe7, 0x07, 0xc8, 0x82, 0x8e, 0x90, 0x93, 
+  0x10, 0x93, 0xc9, 0x04, 0x52, 0x91, 0x0c, 0x08, 0x43
 ])
 # 'sensor_1a_off', 32x14px
 bitmap_sensor_1a_off = bytearray([
@@ -343,14 +342,14 @@ def callback_1(pin):
         interrupt_1_flag= 1
         debounce_1_time=time.ticks_ms()
         
-# def callback_2(pin):
-#     global interrupt_2_flag, debounce_2_time
-#     if (time.ticks_ms() - debounce_2_time) > 500:
-#         interrupt_2_flag= 1
-#         debounce_2_time=time.ticks_ms()
+def callback_2(pin):
+    global interrupt_2_flag, debounce_2_time
+    if (time.ticks_ms() - debounce_2_time) > 500:
+        interrupt_2_flag= 1
+        debounce_2_time=time.ticks_ms()
 
 button_1.irq(trigger=Pin.IRQ_FALLING, handler=callback_1)
-# button_2.irq(trigger=Pin.IRQ_FALLING, handler=callback_2)
+button_2.irq(trigger=Pin.IRQ_FALLING, handler=callback_2)
 
 # Helper functions to replace Arduino-specific functions
 def constrain(val, min_val, max_val):
@@ -377,7 +376,6 @@ def blink(timer):
     
 def calc_speed_sound():
     global error_state, debug
-    # Initialize local variables
     
     #update speed of sound using temp & humidity from dht22
     try:
@@ -499,7 +497,7 @@ def display_car ():
 
     oled.fill(0)
     if rear:
-        oled.blit(FrameBuffer(bitmap_artcar_image,56,15, MONO_HLSB), 36, 0)
+        oled.blit(FrameBuffer(bitmap_artcar_image_back,56,15, MONO_HLSB), 36, 0)
         oled.blit(FrameBuffer(degree_temp,24,10, MONO_HLSB), 104, 0)
         
         if metric:
@@ -527,41 +525,41 @@ def display_car ():
         else:
             oled.blit(FrameBuffer(bitmap_sensor_2d_off, 40, 10, MONO_HLSB), 42, 52)
     else:
-        oled.blit(FrameBuffer(bitmap_artcar_image,56,15, MONO_HLSB), 36, 64-15+1)  # Draw car image
-        oled.blit(FrameBuffer(degree_temp,24,10, MONO_HLSB), 104, 64-10)         # Draw temperature symbol
+        oled.blit(FrameBuffer(bitmap_artcar_image_front,56,15, MONO_HLSB), 36, DISP_HEIGHT-15)
+        oled.blit(FrameBuffer(degree_temp,24,10, MONO_HLSB), 104, DISP_HEIGHT-10)
         
         if metric:
-            oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, 64-10)
-            oled.text(f"{temp_c:.0f}", 108, 64-8)
+            oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
+            oled.text(f"{temp_c:.0f}", 108, DISP_HEIGHT-8)
         else:
-            oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, 64-10)
-            oled.text(f"{temp_f:.0f}", 108, 64-8)
+            oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
+            oled.text(f"{temp_f:.0f}", 108, DISP_HEIGHT-8)
             
         # Display bitmap for step 01
         if sensor[1].cm > dist_step_01:
             flipped = flip_bitmap_vert(bitmap_sensor_2a_on, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, 64-23-9)
+            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
         else:
             flipped = flip_bitmap_vert(bitmap_sensor_2a_off, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, 64-23-9)
+            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
         if sensor[1].cm > dist_step_02:
             flipped = flip_bitmap_vert(bitmap_sensor_2b_on, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, 64-33-9)
+            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
         else:
             flipped = flip_bitmap_vert(bitmap_sensor_2b_off, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, 64-33-9)
+            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
         if sensor[1].cm > dist_step_03:
             flipped = flip_bitmap_vert(bitmap_sensor_2c_on, 32, 10)
-            oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, 64-42-10)
+            oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
         else:
             flipped = flip_bitmap_vert(bitmap_sensor_2c_off, 32, 10)
-            oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, 64-42-10)
+            oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
         if sensor[1].cm > dist_step_04:
             flipped = flip_bitmap_vert(bitmap_sensor_2d_on, 40, 10)
-            oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, 64-52-10)
+            oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
         else:
             flipped = flip_bitmap_vert(bitmap_sensor_2d_off, 40, 10)
-            oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, 64-52-10)
+            oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
     
 #     # NEED FIX black pixels overwrite white, need to 'or' the bits together
 #     oled.blit(FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB), 24, 17) 
@@ -601,8 +599,8 @@ def display_car ():
             oled.fill_rect(xpos, ypos-1, 8*digits, 9, 0) 
             oled.text(int_string, xpos, ypos)
         else:
-            oled.fill_rect(xpos, 64-ypos-1-8, 8*digits, 9, 0) 
-            oled.text(int_string, xpos, 64-ypos-8)
+            oled.fill_rect(xpos, DISP_HEIGHT-ypos-1-8, 8*digits, 9, 0) 
+            oled.text(int_string, xpos, DISP_HEIGHT-ypos-8)
 # 
     oled.show()  # Refresh the display
     return
@@ -614,6 +612,7 @@ print("====================================")
 print(implementation[0], uname()[3],
       "\nrun on", uname()[4])
 print("====================================")
+
 print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
 # if want blinking happening in background
 #timecall = Timer()
