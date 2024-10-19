@@ -375,6 +375,15 @@ def blink(timer):
     led.toggle()
     
 def calc_speed_sound():
+    """
+    calc speed of sound based on temp & humidity from the DHT22 sensor
+    
+    param:speed_sound (float): speed of sound in cm.
+    param:speed of sound (float): speed of sound in cm.
+    param:temp_c (float): temparature in C
+    param:temp_f (float): temparature in F
+    param:humidity (float): humidity %  
+    """
     global error_state, debug
     
     #update speed of sound using temp & humidity from dht22
@@ -460,7 +469,7 @@ def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
             oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
             oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
         
-    oled.blit(FrameBuffer(bitmap_artcar_image,56,15, MONO_HLSB),22,36)
+    oled.blit(FrameBuffer(bitmap_artcar_image_back,56,15, MONO_HLSB),22,36)
     oled.show()
     return
 
@@ -702,8 +711,6 @@ def display_car ():
         blit_white_only_flip(oled, bmp_1b, 32, 16, 21, DISP_HEIGHT-25-16)
         blit_white_only_flip(oled, bmp_1c, 32, 17, 18, DISP_HEIGHT-34-17)
         blit_white_only_flip(oled, bmp_1d, 32, 18, 16, DISP_HEIGHT-43-18)
-            
-            
 
 #    for i in range(NUMBER_OF_SENSORS):
     for i in [1]:
@@ -805,7 +812,7 @@ while True:
 #     # update display with results
 #     display_environment(temp_c, temp_f, humidity, speed_sound, sensor[i].cm)
 
-    # dispay car --- PRELIM - PARTIAL IMPLEMENTATion
+    # dispay car --- PRELIM - PARTIAL 1 sensor implementation
     display_car()
 
     #Every loop do this
