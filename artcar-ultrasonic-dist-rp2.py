@@ -65,7 +65,7 @@ sensor = [SensorData(trig_pin=0, echo_pin=0),
 #initialize label position data were manually defined in the Photoshop
 sensor[0].label_startpos_x = 30  # was 41 (-11)
 sensor[0].label_startpos_y = 20
-sensor[0].label_endpos_x = 19    # was 30
+sensor[0].label_endpos_x = 18    # was 30, adjust 1 more for symmetry
 sensor[0].label_endpos_y = 56    # was 58
 sensor[1].label_startpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
 sensor[1].label_startpos_y = 23
