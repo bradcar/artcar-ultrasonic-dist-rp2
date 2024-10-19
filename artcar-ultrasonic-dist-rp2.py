@@ -57,11 +57,59 @@ class SensorData:
         self.label_endpos_x = 0     # end X position for the label
         self.label_endpos_y = 0     # end Y position for the label
 
+MIN_DIST = 2.0
+MAX_DIST = 100.0
+SPEED_SOUND_20C_70H = 343.294
+
+dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)
+dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)
+dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)
+dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)
+
+interrupt_1_flag=0
+interrupt_2_flag=0
+debounce_1_time=0
+debounce_2_time=0
+
+# === PINS ===
+dht_pin = machine.Pin(2)
+button_1 = Pin(5, Pin.IN, Pin.PULL_UP)  #interrupt cm/in button pins
+button_2 = Pin(6, Pin.IN, Pin.PULL_UP)  #interrupt rear/front button pins
+
+# https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
+# i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+# oled = SSD1306_I2C(DISP_WIDTH, DISP_HEIGHT, i2c)
+# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
+cs  = machine.Pin(9)    #dummy (any un-used pin), no connection
+# scl (SCLK) gp10 
+# SDA (MOSI) gp11
+res = machine.Pin(12)   # RES (RST)  gp12
+dc  = machine.Pin(13)   # DC         gp13
+
 # Create a list to hold the sensor data for each sensor
 #set up for (21,20, 19,18, 17,16)
 sensor = [SensorData(trig_pin=21, echo_pin=20),
           SensorData(trig_pin=3, echo_pin=4),
-          SensorData(trig_pin=17, echo_pin=116)]
+          SensorData(trig_pin=17, echo_pin=16)]
+# sensor = [SensorData(trig_pin=21, echo_pin=20),
+#           SensorData(trig_pin=19, echo_pin=18),
+#           SensorData(trig_pin=17, echo_pin=16)]
+
+# Initialize empty lists for trigger and echo
+trigger = []
+echo = []
+
+for i in range(NUMBER_OF_SENSORS):
+    trigger_pin = Pin(sensor[i].trig_pin, Pin.OUT)
+    echo_pin = Pin(sensor[i].echo_pin, Pin.IN)
+    trigger.append(trigger_pin)
+    echo.append(echo_pin)
+led = Pin(25, Pin.OUT)
+
+dht_sensor = dht.DHT22(dht_pin)
+oled_spi = machine.SPI(1)
+oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
+print("oled_spi:", oled_spi)
 
 #initialize label position data were manually defined in the Photoshop
 sensor[0].label_startpos_x = 30  # was 41 (-11)
@@ -77,45 +125,7 @@ sensor[2].label_startpos_y = 20
 sensor[2].label_endpos_x = 86    # was 97 (-11)
 sensor[2].label_endpos_y = 56    # was 57
 
-MIN_DIST = 2.0
-MAX_DIST = 100.0
-SPEED_SOUND_20C_70H = 343.294
-
-dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)
-dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)
-dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)
-dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)
-
-interrupt_1_flag=0
-interrupt_2_flag=0
-debounce_1_time=0
-debounce_2_time=0
-
-# PINS
-# https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
-# i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
-# oled = SSD1306_I2C(DISP_WIDTH, DISP_HEIGHT, i2c)
-
-dht_pin = machine.Pin(2)
-trigger = Pin(sensor[1].trig_pin, Pin.OUT)
-echo = Pin(sensor[1].echo_pin, Pin.IN)
-button_1 = Pin(5, Pin.IN, Pin.PULL_UP)
-button_2 = Pin(6, Pin.IN, Pin.PULL_UP)
-led = Pin(25, Pin.OUT)
-
-# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
-cs  = machine.Pin(9)    #dummy (any un-used pin), no connection
-# scl (SCLK) gp10 
-# SDA (MOSI) gp11
-res = machine.Pin(12)   # RES (RST)  gp12
-dc  = machine.Pin(13)   # DC         gp13
-
-dht_sensor = dht.DHT22(dht_pin)
-oled_spi = machine.SPI(1)
-oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
-print("oled_spi:", oled_spi)
-
-#  DISPLAY IMAGES
+# DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
 # const unsigned char bitmap_artcar_image[] PROGMEM = {0xc9, 0x04, 0x52, ...
 # can be bitmap_artcar_image=bytearray(b'\xc9\x04\x59
@@ -328,8 +338,9 @@ degree_temp = bytearray([
 ])
 
 rear = True
+show_env = False
 metric = False
-error_state = False
+dht_error = False
 debug = False
 
 # Button debouncer
@@ -359,19 +370,8 @@ def map_range(value, in_min, in_max, out_min, out_max):
 def get_str_width(text):
     # In MicroPython has 8x8 fonts  x*9-1 ?
     return len(text) 
-
-def blink(timer):
-    """
-    Callback function to toggle the LED state, creating a blinking effect.
-    To enable background blinking call with:
-    timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
     
-    param:timer: The Timer object triggering the callback.        
-    """
-    global led
-    led.toggle()
-    
-def calc_speed_sound():
+def calc_speed_sound(speed_sound, temp_c, temp_f, humidity):
     """
     calc speed of sound based on temp & humidity from the DHT22 sensor
     
@@ -381,10 +381,11 @@ def calc_speed_sound():
     param:temp_f (float): temparature in F
     param:humidity (float): humidity %  
     """
-    global error_state, debug
+    global dht_error, debug
     
     try:
         dht_sensor.measure()
+        dht_error = False
         temp_c = dht_sensor.temperature()
         temp_f = (temp_c * 9.0 / 5.0) + 32.0
         humidity = dht_sensor.humidity()
@@ -408,38 +409,36 @@ def calc_speed_sound():
     return(speed_sound, temp_c, temp_f, humidity)
 
     
-def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
+def ultrasonic_distance(i, speed, timeout=50000):
     """
     Measure the distance using an ultrasonic sensor with a timeout.
-     * tried with 3.3v, but really need 5v for ultrasonic & display
-     * todo determine if this should be 30000, like in Arduino code
-     * todo create consistent error handling throughout code
-
+    
+    :param i (int): index for ultrasonic sensor.
     :param speed (float): Speed of sound in m/s.
-    :param timeout (int): Max usecs to wait for the echo signal return
-    :returns: cm distance or
+    :param timeout (int): Max usecs to wait for the echo signal return.
+    :returns: cm distance or an error value.
     """
-    trigger.low()
+    trigger[i].low()
     utime.sleep_us(2)
-    trigger.high()
+    trigger[i].high()
     utime.sleep_us(5)
-    trigger.low()
+    trigger[i].low()
 
     # Wait for echo to go high, with timeout
     start = utime.ticks_us()
-    while echo.value() == 0:
+    while echo[i].value() == 0:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
-            print("error ultrasonic: too close or malfunction.")
-            return 0.0    # return max distance
+            print(f"Error: Sensor {i} - too close or malfunction.")
+            return 0.0  # Return max distance or an error
 
     signal_off = utime.ticks_us()
 
     # Wait for echo to go low, with timeout
     start = utime.ticks_us()
-    while echo.value() == 1:
+    while echo[i].value() == 1:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
-            print("error ultrasonic: no signal returned, too far.")
-            return 300.0  # return max distance
+            print(f"Error: Sensor {i} - no signal returned, too far.")
+            return 300.0  # Return max distance
 
     signal_on = utime.ticks_us()
 
@@ -447,10 +446,21 @@ def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
     return (signal_on - signal_off) * (speed / 20000.0)
 
 def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
-    global metric, error_state, debug
+    """
+    display just environment readings & car image for fun,
+    No need to oled.fill(0) before or oled.show() after call
+
+    param:speed of sound (float): speed of sound in cm.
+    param:temp_c (float): temparature in C
+    param:temp_f (float): temparature in F
+    param:humidity (float): humidity %
+    param:dist (float):  distance if dist = -1.0 then display error
+    param:speed_sound (float): speed of sound in cm.
+    """
+    global metric, working_sensors, dht_error, debug
     
     oled.fill(0)
-    if not error_state:
+    if not dht_error:
         temp_f = (temp_c * 9.0 / 5.0) + 32.0
         oled.fill(0)
         if metric:
@@ -460,10 +470,19 @@ def display_environment(temp_c, temp_f, humidity, speed_sound, dist):
         oled.text(f"Humid= {humidity:.1f}%", 0, 12)
         if metric:
             oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
-            oled.text(f"Dist= {dist:.0f}cm", 0, 55)
+            if dist != -1.0:
+                oled.text(f"Dist= {dist:.0f}cm", 0, 55)
+            else:
+                oled.text(f"No ultrasonic", 0, 55)
         else:
             oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
-            oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
+            if dist != -1.0:
+                oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
+            else:
+                oled.text(f"No ultrasonic", 0, 55)
+    else:
+        oled.text(f"No Temp/Humidity", 0, 10)
+        oled.text(f" Sensor Working",  0, 20) 
         
     oled.blit(FrameBuffer(bitmap_artcar_image_back,56,15, MONO_HLSB),22,36)
     oled.show()
@@ -532,192 +551,220 @@ def blit_white_only_flip(oled, source_fb, w, h, x, y):
             pixel = source_fb.pixel(col, flipped_row)
             if pixel == 1:  # Only copy white pixels
                 oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
-    
-def display_car ():
-    global metric, error_state, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
+                
+def display_car (temp_c, temp_f):
+    """
+    display_car & temp, Need oled.fill(0) before call & oled.show() after call
 
-    oled.fill(0)
+    param:temp_c (float): temparature in C
+    param:temp_f (float): temparature in F
+    """
+    global rear, metric, dht_error, debug
+    
     if rear:
         oled.blit(FrameBuffer(bitmap_artcar_image_back,56,15, MONO_HLSB), 36, 0)
         oled.blit(FrameBuffer(degree_temp,24,10, MONO_HLSB), 104, 0)
         
         if metric:
             oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, 0)
-            oled.text(f"{temp_c:.0f}", 108, 2)
+            if not dht_error:
+                oled.text(f"{temp_c:.0f}", 108, 2)
+            else:
+                oled.text("xx", 108, 2)
         else:
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, 0)
-            oled.text(f"{temp_f:.0f}", 108, 2)
-
-        # Display bitmap for sensor 2
-        if sensor[1].cm > dist_step_01:
-            oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32, 9, MONO_HLSB), 48, 23)
-        else:
-            oled.blit(FrameBuffer(bitmap_sensor_2a_off, 32, 9, MONO_HLSB), 48, 23)
-        if sensor[1].cm > dist_step_02:
-            oled.blit(FrameBuffer(bitmap_sensor_2b_on, 32, 9, MONO_HLSB), 48, 33)
-        else:
-            oled.blit(FrameBuffer(bitmap_sensor_2b_off, 32, 9, MONO_HLSB), 48, 33)
-        if sensor[1].cm > dist_step_03:
-            oled.blit(FrameBuffer(bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, 42)
-        else:
-            oled.blit(FrameBuffer(bitmap_sensor_2c_off, 32, 10, MONO_HLSB), 47, 42)
-        if sensor[1].cm > dist_step_04:
-            oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52)
-        else:
-            oled.blit(FrameBuffer(bitmap_sensor_2d_off, 40, 10, MONO_HLSB), 42, 52)
-        
-        # DO NOT LIKE THIS SOLUTION, but couldn't find anotehr way to only
-        # have white pixels updating screen, blit forces all pixes B & W to OLED
-        # NEED FIX black pixels overwrite white, need to 'or' the bits together
-#         oled.blit(FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB), 24, 17) 
-#         oled.blit(FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB), 21, 25) 
-#         oled.blit(FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB), 18, 34)
-#         oled.blit(FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB), 16, 43)
-# 
-#         oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32,  9, MONO_HLSB), 48, 23)
-#         oled.blit(FrameBuffer(bitmap_sensor_2b_on, 32,  9, MONO_HLSB), 48, 33)
-#         oled.blit(FrameBuffer(bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, 42)
-#         oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52) 
-# 
-#         oled.blit(FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB), 72, 17)
-#         oled.blit(FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB), 74, 25)
-#         oled.blit(FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB), 77, 34)
-#         oled.blit(FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB), 80, 43)
-
-        # Display bitmap for sensor 1
-        if sensor[1].cm > dist_step_01:
-            bmp_1a = FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 24, 17)
-        else:
-            bmp_1a = FrameBuffer(bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 24, 17)
-        if sensor[1].cm > dist_step_02:
-            bmp_1b = FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 21, 25)
-        else:
-            bmp_1b = FrameBuffer(bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 21, 25)
-        if sensor[1].cm > dist_step_03:
-            bmp_1c = FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 18, 34)
-        else:
-            bmp_1c = FrameBuffer(bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 18, 34)
-        if sensor[1].cm > dist_step_04:
-            bmp_1d = FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 16, 43)
-        else:
-            bmp_1d = FrameBuffer(bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 16, 43)
-        blit_white_only(oled, bmp_1a, 32, 14, 24, 17)
-        blit_white_only(oled, bmp_1b, 32, 16, 21, 25)
-        blit_white_only(oled, bmp_1c, 32, 17, 18, 34)
-        blit_white_only(oled, bmp_1d, 32, 18, 16, 43)
-
-        # Display bitmap for sensor 3
-        if sensor[1].cm > dist_step_01:
-            bmp_3a = FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
-        else:
-            bmp_3a = FrameBuffer(bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
-        if sensor[1].cm > dist_step_02:
-            bmp_3b = FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
-        else:
-            bmp_3b = FrameBuffer(bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
-        if sensor[1].cm > dist_step_03:
-            bmp_3c = FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
-        else:
-            bmp_3c = FrameBuffer(bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
-        if sensor[1].cm > dist_step_04:
-            bmp_3d = FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
-        else:
-            bmp_3d = FrameBuffer(bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
-        blit_white_only(oled, bmp_3a, 32, 14, 72, 17)
-        blit_white_only(oled, bmp_3b, 32, 16, 74, 25)
-        blit_white_only(oled, bmp_3c, 32, 17, 77, 34)
-        blit_white_only(oled, bmp_3d, 32, 18, 80, 43)
+            if not dht_error:
+                oled.text(f"{temp_f:.0f}", 108, 2)
+            else:
+                oled.text("xx", 108, 2)
     else:
         oled.blit(FrameBuffer(bitmap_artcar_image_front,56,15, MONO_HLSB), 36, DISP_HEIGHT-15)
         oled.blit(FrameBuffer(degree_temp,24,10, MONO_HLSB), 104, DISP_HEIGHT-10)
         
         if metric:
             oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
-            oled.text(f"{temp_c:.0f}", 108, DISP_HEIGHT-8)
+            if not dht_error:
+                oled.text(f"{temp_c:.0f}", 108, DISP_HEIGHT-8)
+            else:
+                oled.text("xx", 108, DISP_HEIGHT-8)
         else:
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
-            oled.text(f"{temp_f:.0f}", 108, DISP_HEIGHT-8)
-            
-        # Display bitmap for aensor 2
-        if sensor[1].cm > dist_step_01:
-            flipped = flip_bitmap_vert(bitmap_sensor_2a_on, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
-        else:
-            flipped = flip_bitmap_vert(bitmap_sensor_2a_off, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
-        if sensor[1].cm > dist_step_02:
-            flipped = flip_bitmap_vert(bitmap_sensor_2b_on, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
-        else:
-            flipped = flip_bitmap_vert(bitmap_sensor_2b_off, 32, 9)
-            oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
-        if sensor[1].cm > dist_step_03:
-            flipped = flip_bitmap_vert(bitmap_sensor_2c_on, 32, 10)
-            oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
-        else:
-            flipped = flip_bitmap_vert(bitmap_sensor_2c_off, 32, 10)
-            oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
-        if sensor[1].cm > dist_step_04:
-            flipped = flip_bitmap_vert(bitmap_sensor_2d_on, 40, 10)
-            oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
-        else:
-            flipped = flip_bitmap_vert(bitmap_sensor_2d_off, 40, 10)
-            oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
-            
-        # Display bitmap for sensor 3 (notice using images for sendor 3
-        if sensor[1].cm > dist_step_01:
-            bmp_3a = FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
-        else:
-            bmp_3a = FrameBuffer(bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
-        if sensor[1].cm > dist_step_02:
-            bmp_3b = FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
-        else:
-            bmp_3b = FrameBuffer(bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
-        if sensor[1].cm > dist_step_03:
-            bmp_3c = FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
-        else:
-            bmp_3c = FrameBuffer(bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
-        if sensor[1].cm > dist_step_04:
-            bmp_3d = FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
-        else:
-            bmp_3d = FrameBuffer(bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
-        blit_white_only_flip(oled, bmp_3a, 32, 14, 72, DISP_HEIGHT-17-14)
-        blit_white_only_flip(oled, bmp_3b, 32, 16, 74, DISP_HEIGHT-25-16)
-        blit_white_only_flip(oled, bmp_3c, 32, 17, 77, DISP_HEIGHT-34-17)
-        blit_white_only_flip(oled, bmp_3d, 32, 18, 80, DISP_HEIGHT-43-18)
-        
-        # Display bitmap for sensor 3 (notice using images for sendor 3
-        if sensor[1].cm > dist_step_01:
-            bmp_1a = FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 72, 17)
-        else:
-            bmp_1a = FrameBuffer(bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 72, 17)
-        if sensor[1].cm > dist_step_02:
-            bmp_1b = FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 74, 25)
-        else:
-            bmp_1b = FrameBuffer(bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 74, 25)
-        if sensor[1].cm > dist_step_03:
-            bmp_1c = FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 77, 34)
-        else:
-            bmp_1c = FrameBuffer(bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 77, 34)
-        if sensor[1].cm > dist_step_04:
-            bmp_1d = FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 80, 43)
-        else:
-            bmp_1d = FrameBuffer(bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 80, 43)
-        blit_white_only_flip(oled, bmp_1a, 32, 14, 24, DISP_HEIGHT-17-14)
-        blit_white_only_flip(oled, bmp_1b, 32, 16, 21, DISP_HEIGHT-25-16)
-        blit_white_only_flip(oled, bmp_1c, 32, 17, 18, DISP_HEIGHT-34-17)
-        blit_white_only_flip(oled, bmp_1d, 32, 18, 16, DISP_HEIGHT-43-18)
+            if not dht_error:
+                oled.text(f"{temp_f:.0f}", 108, DISP_HEIGHT-8)
+            else:
+                oled.text("xx", 108, DISP_HEIGHT-8)
+    return
 
-#    for i in range(NUMBER_OF_SENSORS):
-    for i in [1]:
+def display_tiles_dist():
+    """
+    display_car & temp, Need oled.show() after call
+    """
+    global sensor, working_sensors, rear, dht_error, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
+
+    if not working_sensors:
+        oled.text(" No Ultrasonic",  5, 30)
+        oled.text("Sensors Working", 5, 40)
+        return
+
+    for i in working_sensors:
+        if rear:
+            # Display bitmap for sensor 2
+            if sensor[1].cm > dist_step_01:
+                oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32, 9, MONO_HLSB), 48, 23)
+            else:
+                oled.blit(FrameBuffer(bitmap_sensor_2a_off, 32, 9, MONO_HLSB), 48, 23)
+            if sensor[1].cm > dist_step_02:
+                oled.blit(FrameBuffer(bitmap_sensor_2b_on, 32, 9, MONO_HLSB), 48, 33)
+            else:
+                oled.blit(FrameBuffer(bitmap_sensor_2b_off, 32, 9, MONO_HLSB), 48, 33)
+            if sensor[1].cm > dist_step_03:
+                oled.blit(FrameBuffer(bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, 42)
+            else:
+                oled.blit(FrameBuffer(bitmap_sensor_2c_off, 32, 10, MONO_HLSB), 47, 42)
+            if sensor[1].cm > dist_step_04:
+                oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52)
+            else:
+                oled.blit(FrameBuffer(bitmap_sensor_2d_off, 40, 10, MONO_HLSB), 42, 52)
+            
+            # DO NOT LIKE THIS SOLUTION, but couldn't find anotehr way to only
+            # have white pixels updating screen, blit forces all pixes B & W to OLED
+            # NEED FIX black pixels overwrite white, need to 'or' the bits together
+    #         oled.blit(FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB), 24, 17) 
+    #         oled.blit(FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB), 21, 25) 
+    #         oled.blit(FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB), 18, 34)
+    #         oled.blit(FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB), 16, 43)
+    # 
+    #         oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32,  9, MONO_HLSB), 48, 23)
+    #         oled.blit(FrameBuffer(bitmap_sensor_2b_on, 32,  9, MONO_HLSB), 48, 33)
+    #         oled.blit(FrameBuffer(bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, 42)
+    #         oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52) 
+    # 
+    #         oled.blit(FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB), 72, 17)
+    #         oled.blit(FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB), 74, 25)
+    #         oled.blit(FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB), 77, 34)
+    #         oled.blit(FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB), 80, 43)
+
+            # Display bitmap for sensor 1
+            if sensor[1].cm > dist_step_01:
+                bmp_1a = FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 24, 17)
+            else:
+                bmp_1a = FrameBuffer(bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 24, 17)
+            if sensor[1].cm > dist_step_02:
+                bmp_1b = FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 21, 25)
+            else:
+                bmp_1b = FrameBuffer(bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 21, 25)
+            if sensor[1].cm > dist_step_03:
+                bmp_1c = FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 18, 34)
+            else:
+                bmp_1c = FrameBuffer(bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 18, 34)
+            if sensor[1].cm > dist_step_04:
+                bmp_1d = FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 16, 43)
+            else:
+                bmp_1d = FrameBuffer(bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 16, 43)
+            blit_white_only(oled, bmp_1a, 32, 14, 24, 17)
+            blit_white_only(oled, bmp_1b, 32, 16, 21, 25)
+            blit_white_only(oled, bmp_1c, 32, 17, 18, 34)
+            blit_white_only(oled, bmp_1d, 32, 18, 16, 43)
+
+            # Display bitmap for sensor 3
+            if sensor[1].cm > dist_step_01:
+                bmp_3a = FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+            else:
+                bmp_3a = FrameBuffer(bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+            if sensor[1].cm > dist_step_02:
+                bmp_3b = FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+            else:
+                bmp_3b = FrameBuffer(bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+            if sensor[1].cm > dist_step_03:
+                bmp_3c = FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+            else:
+                bmp_3c = FrameBuffer(bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+            if sensor[1].cm > dist_step_04:
+                bmp_3d = FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+            else:
+                bmp_3d = FrameBuffer(bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
+            blit_white_only(oled, bmp_3a, 32, 14, 72, 17)
+            blit_white_only(oled, bmp_3b, 32, 16, 74, 25)
+            blit_white_only(oled, bmp_3c, 32, 17, 77, 34)
+            blit_white_only(oled, bmp_3d, 32, 18, 80, 43)
+        else:   
+            # Display bitmap for aensor 2
+            if sensor[1].cm > dist_step_01:
+                flipped = flip_bitmap_vert(bitmap_sensor_2a_on, 32, 9)
+                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
+            else:
+                flipped = flip_bitmap_vert(bitmap_sensor_2a_off, 32, 9)
+                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
+            if sensor[1].cm > dist_step_02:
+                flipped = flip_bitmap_vert(bitmap_sensor_2b_on, 32, 9)
+                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
+            else:
+                flipped = flip_bitmap_vert(bitmap_sensor_2b_off, 32, 9)
+                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
+            if sensor[1].cm > dist_step_03:
+                flipped = flip_bitmap_vert(bitmap_sensor_2c_on, 32, 10)
+                oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
+            else:
+                flipped = flip_bitmap_vert(bitmap_sensor_2c_off, 32, 10)
+                oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
+            if sensor[1].cm > dist_step_04:
+                flipped = flip_bitmap_vert(bitmap_sensor_2d_on, 40, 10)
+                oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
+            else:
+                flipped = flip_bitmap_vert(bitmap_sensor_2d_off, 40, 10)
+                oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
+                
+            # Display bitmap for sensor 3 (notice using images for sendor 3
+            if sensor[1].cm > dist_step_01:
+                bmp_3a = FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+            else:
+                bmp_3a = FrameBuffer(bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+            if sensor[1].cm > dist_step_02:
+                bmp_3b = FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+            else:
+                bmp_3b = FrameBuffer(bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+            if sensor[1].cm > dist_step_03:
+                bmp_3c = FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+            else:
+                bmp_3c = FrameBuffer(bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+            if sensor[1].cm > dist_step_04:
+                bmp_3d = FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+            else:
+                bmp_3d = FrameBuffer(bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
+            blit_white_only_flip(oled, bmp_3a, 32, 14, 72, DISP_HEIGHT-17-14)
+            blit_white_only_flip(oled, bmp_3b, 32, 16, 74, DISP_HEIGHT-25-16)
+            blit_white_only_flip(oled, bmp_3c, 32, 17, 77, DISP_HEIGHT-34-17)
+            blit_white_only_flip(oled, bmp_3d, 32, 18, 80, DISP_HEIGHT-43-18)
+            
+            # Display bitmap for sensor 3 (notice using images for sendor 3
+            if sensor[1].cm > dist_step_01:
+                bmp_1a = FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+            else:
+                bmp_1a = FrameBuffer(bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+            if sensor[1].cm > dist_step_02:
+                bmp_1b = FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+            else:
+                bmp_1b = FrameBuffer(bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+            if sensor[1].cm > dist_step_03:
+                bmp_1c = FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+            else:
+                bmp_1c = FrameBuffer(bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+            if sensor[1].cm > dist_step_04:
+                bmp_1d = FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+            else:
+                bmp_1d = FrameBuffer(bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 80, 43)
+            blit_white_only_flip(oled, bmp_1a, 32, 14, 24, DISP_HEIGHT-17-14)
+            blit_white_only_flip(oled, bmp_1b, 32, 16, 21, DISP_HEIGHT-25-16)
+            blit_white_only_flip(oled, bmp_1c, 32, 17, 18, DISP_HEIGHT-34-17)
+            blit_white_only_flip(oled, bmp_1d, 32, 18, 16, DISP_HEIGHT-43-18)
+
+    for i in working_sensors:
         if metric:
             int_string = str(int(sensor[i].cm))
         else:
             int_string = str(int(sensor[i].inch))
         digits = get_str_width(int_string)
         
-#    for i in range(NUMBER_OF_SENSORS):
-    for i in range(3):
         startpos_x = sensor[i].label_startpos_x + (3-digits)*4
         endpos_x = sensor[i].label_endpos_x + (3-digits)*4
 
@@ -732,8 +779,6 @@ def display_car ():
         else:
             oled.fill_rect(xpos, DISP_HEIGHT-ypos-1-8, 8*digits, 9, 0) 
             oled.text(int_string, xpos, DISP_HEIGHT-ypos-8)
-# 
-    oled.show()  # Refresh the display
     return
 
 
@@ -745,20 +790,17 @@ print(implementation[0], uname()[3],
 print("====================================")
 
 print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
-# if want blinking happening in background
-#timecall = Timer()
-#timecall.init(freq=2.5, mode=Timer.PERIODIC, callback=blink)
 
 # at start display artcar image at top of oled
-# display car's *PRELIM* PARTIAL IMPLEMENTATion
 temp_c = 20.56
 temp_f = 69.0
 humidity = 70.0
 speed_sound = SPEED_SOUND_20C_70H
-display_car()
+oled.fill(0)
+display_car(temp_c, temp_f)
+oled.show()
 zzz(3)
 
-# ??? Should check for ultrasonic errors?
 # check status of DHT sensor
 try:
     dht_sensor.measure()
@@ -769,8 +811,18 @@ except Exception as e:
     oled.text("Error DHT22", 0, 24)
     oled.text(str(e), 0, 36)
     oled.show()
-    temp_c = temp_f = humidity = speed_sound = 0.0  # Reset to default
-    error_state = True
+    dht_error = True
+
+working_sensors = []
+nonworking_sensors = []
+for i in range(NUMBER_OF_SENSORS):
+    distance = ultrasonic_distance(i, speed_sound)  # speed of sound in air is ~343 m/s
+    if 0.0 < distance < 300.0:
+        working_sensors.append(i)
+    else:
+        nonworking_sensors.append(i)
+print(f"Working Ultrasonic sensors: {working_sensors}")
+print(f"Non-working Ultrasonic sensors: {nonworking_sensors}")
 
 # main loop
 loop_time = time.ticks_ms()
@@ -793,31 +845,36 @@ while True:
     # every 3 sec, calc speed of sound based on temp & humidity
     if elapsed_time > 3000:
         loop_time = time.ticks_ms()
-        speed_sound, temp_c, temp_f, humidity = calc_speed_sound()
+        speed_sound, temp_c, temp_f, humidity = calc_speed_sound(speed_sound, temp_c, temp_f, humidity)
     
-    for i in [1]:
+    for i in working_sensors:
         #get distance from ultrasonic sensor, 30ms round trip 514cm or 202in
-        sensor[i].cm = ultrasonic_distance(speed_sound, timeout=30000)
+        sensor[i].cm = ultrasonic_distance(i, speed_sound, timeout=30000)
         sensor[i].inch = sensor[i].cm/2.54
     # dummy up three sensors
     sensor[0].cm = sensor[1].cm
     sensor[0].inch = sensor[1].inch
     sensor[2].cm = sensor[1].cm
-    sensor[2].inch = sensor[1].inch  
+    sensor[2].inch = sensor[1].inch
     
-#     # update display with results
-#     display_environment(temp_c, temp_f, humidity, speed_sound, sensor[i].cm)
-
-    # dispay car --- PRELIM - PARTIAL 1 sensor implementation
-    display_car()
+    if show_env:
+        if working_sensors:
+            display_environment(temp_c, temp_f, humidity, speed_sound, sensor[working_sensors[0]].cm)
+        else:
+            display_environment(temp_c, temp_f, humidity, speed_sound, -1.0)
+    else:
+        oled.fill(0)
+        display_car(temp_c, temp_f)
+        display_tiles_dist()
+        oled.show()
 
     #Every loop do this
     led.toggle()
     time.sleep_ms(300)
     
-# # at some point
+# # AT SOME POINT
 # try:
-# # where the action happens    
+# # where the action happens  
 #     while True:
 # #
 # except KeyboardInterrupt:
