@@ -58,9 +58,10 @@ class SensorData:
         self.label_endpos_y = 0     # end Y position for the label
 
 # Create a list to hold the sensor data for each sensor
-sensor = [SensorData(trig_pin=0, echo_pin=0),
-           SensorData(trig_pin=3, echo_pin=4),
-           SensorData(trig_pin=0, echo_pin=0)]
+#set up for (21,20, 19,18, 17,16)
+sensor = [SensorData(trig_pin=21, echo_pin=20),
+          SensorData(trig_pin=3, echo_pin=4),
+          SensorData(trig_pin=17, echo_pin=116)]
 
 #initialize label position data were manually defined in the Photoshop
 sensor[0].label_startpos_x = 30  # was 41 (-11)
@@ -108,19 +109,16 @@ cs  = machine.Pin(9)    #dummy (any un-used pin), no connection
 # SDA (MOSI) gp11
 res = machine.Pin(12)   # RES (RST)  gp12
 dc  = machine.Pin(13)   # DC         gp13
-dht_sensor = dht.DHT22(dht_pin)
 
+dht_sensor = dht.DHT22(dht_pin)
 oled_spi = machine.SPI(1)
-print("oled_spi:", oled_spi)
 oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
+print("oled_spi:", oled_spi)
 
 #  DISPLAY IMAGES
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
-# then replace ", 0"  with "\"
-# const unsigned char bitmap_artcar_image[] PROGMEM = {0xc9, 0x04, 0x59, ...
+# const unsigned char bitmap_artcar_image[] PROGMEM = {0xc9, 0x04, 0x52, ...
 # can be bitmap_artcar_image=bytearray(b'\xc9\x04\x59
-#
-# NOTE: we have flip for upside down images for front sensor
 #
 # 'art-car-imag', 56x15px
 bitmap_artcar_image_back = bytearray([
@@ -362,7 +360,6 @@ def get_str_width(text):
     # In MicroPython has 8x8 fonts  x*9-1 ?
     return len(text) 
 
-
 def blink(timer):
     """
     Callback function to toggle the LED state, creating a blinking effect.
@@ -386,7 +383,6 @@ def calc_speed_sound():
     """
     global error_state, debug
     
-    #update speed of sound using temp & humidity from dht22
     try:
         dht_sensor.measure()
         temp_c = dht_sensor.temperature()
@@ -434,7 +430,7 @@ def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
     while echo.value() == 0:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
             print("error ultrasonic: too close or malfunction.")
-            return 0    # return max distance
+            return 0.0    # return max distance
 
     signal_off = utime.ticks_us()
 
@@ -443,7 +439,7 @@ def ultrasonic_distance(speed, timeout=50000):  # timeout in microseconds
     while echo.value() == 1:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
             print("error ultrasonic: no signal returned, too far.")
-            return 300  # return max distance
+            return 300.0  # return max distance
 
     signal_on = utime.ticks_us()
 
@@ -527,6 +523,7 @@ def blit_white_only_flip(oled, source_fb, w, h, x, y):
     :param h: height of the framebuffer
     :param x: x-position for display
     :param y: y-position for display
+    :return 
     """
     for row in range(h):
         for col in range(w):
@@ -535,7 +532,6 @@ def blit_white_only_flip(oled, source_fb, w, h, x, y):
             pixel = source_fb.pixel(col, flipped_row)
             if pixel == 1:  # Only copy white pixels
                 oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
-
     
 def display_car ():
     global metric, error_state, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
