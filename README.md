@@ -4,7 +4,7 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 
 Features of this Raspberry Pi Pico 2 code:
 * SSD1309 - uses SSD1306, have SDI & I2C code, SDI faster
-* button debounce using efficient interrupt code (does not use CPU cycles & sleep, yay!)
+* button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * DHT22 - for temp & humidity
 * uses ssd1306 print & blit(FrameBuffer) of bitmap images
 * up to 3x Ultrasonic sensors are polled for distances (PWM - timed for distances)
