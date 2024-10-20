@@ -12,7 +12,9 @@ To see my Art Car, it's the 5th image down in https://en.wikipedia.org/wiki/Art_
 
 Other Useful sites:
 * image2cpp (convert images into C code): https://javl.github.io/image2cpp/
-* MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
+* Going to use: Foriot's TXS0108E 8 Channel Level Converter Module Support 3.3V to 5V to protect Pico from 5v signals for Ultrasonic accuracy and SSD1309 power
+  * USSD1309 SDI is fast, so I need one that can keep up https://www.amazon.com/gp/product/B0CFL9KN7L
 * Powering Pico: https://www.youtube.com/watch?v=3PH9jzRsb5E -- Useful because I'm going to need 3.3v for Pico, 5v for ultrasonics, and power in my car.
-* * Buck converter 12v to 5v (usb-b to microusb), also have MosFET protection (recommended DMG-2305ux MosFET)
-* Going to use: Foriot's TXS0108E 8 Channel Level Converter Module Support 3.3V to 5V to protect Pico from 5v signals (Ultrasonic's and SSD1306 SDI is fast so I need one that can keep up) https://www.amazon.com/gp/product/B0CFL9KN7L
+  * get Buck converter 12v to 5v (usb-b to micro-usb)
+  * Also have MosFET protection (recommended DMG-2305ux MosFET), that way I can hook laptop up in car to update SW
+* MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
