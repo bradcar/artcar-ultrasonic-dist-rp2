@@ -203,6 +203,14 @@ bitmap_sensor_1d_off = bytearray([
   0x00, 0x55, 0x55, 0x54, 0x00, 0x0a, 0xaa, 0xaa, 0x00, 0x01, 0x55, 0x54, 0x00, 0x00, 0x2a, 0xa8,
   0x00, 0x00, 0x01, 0x54, 0x00, 0x00, 0x00, 0x08
 ])
+# 'sensor_1d_on', 32x18px
+bitmap_sensor_1d_on = bytearray([
+  0x20, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x00, 0x7f, 0x00, 0x00, 0x00, 0x7f, 0xc0, 0x00, 0x00,
+  0xff, 0xf8, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0xf0, 0x00, 0xff, 0xff, 0xfe, 0x00,
+  0x7f, 0xff, 0xff, 0xf0, 0x3f, 0xff, 0xff, 0xfe, 0x0f, 0xff, 0xff, 0xfe, 0x03, 0xff, 0xff, 0xfe,
+  0x00, 0x7f, 0xff, 0xfe, 0x00, 0x1f, 0xff, 0xfe, 0x00, 0x01, 0xff, 0xfc, 0x00, 0x00, 0x3f, 0xfc,
+  0x00, 0x00, 0x03, 0xfc, 0x00, 0x00, 0x00, 0x1c
+])
 # 'sensor_2a_off', 32x9px
 bitmap_sensor_2a_off = bytearray([
   0x05, 0x55, 0x55, 0x40, 0x0a, 0xaa, 0xaa, 0xa0, 0x05, 0x55, 0x55, 0x40, 0x0a, 0xaa, 0xaa, 0xa0,
@@ -268,13 +276,6 @@ bitmap_sensor_3a_off = bytearray([
   0x05, 0x55, 0x55, 0x00, 0x0a, 0xaa, 0xa8, 0x00, 0x05, 0x55, 0x50, 0x00, 0x0a, 0xaa, 0x80, 0x00,
   0x05, 0x50, 0x00, 0x00, 0x0a, 0x80, 0x00, 0x00
 ])
-# 'sensor_3b_on', 32x16px
-bitmap_sensor_3b_on = bytearray([
-  0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x01, 0xe0, 0x00, 0x00, 0x0f, 0xe0, 0x00, 0x00, 0x3f, 0xf0,
-  0x00, 0x01, 0xff, 0xf0, 0x00, 0x1f, 0xff, 0xf8, 0x01, 0xff, 0xff, 0xf8, 0x1f, 0xff, 0xff, 0xfc,
-  0x1f, 0xff, 0xff, 0xf8, 0x1f, 0xff, 0xff, 0xe0, 0x1f, 0xff, 0xff, 0x80, 0x1f, 0xff, 0xfc, 0x00,
-  0x0f, 0xff, 0xe0, 0x00, 0x0f, 0xff, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00, 0x0f, 0x00, 0x00, 0x00
-])
 # 'sensor_3a_on', 32x14px
 bitmap_sensor_3a_on = bytearray([
   0x00, 0x00, 0x06, 0x00, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x01, 0xff, 0xc0, 0x00, 0x0f, 0xff, 0xc0,
@@ -289,6 +290,13 @@ bitmap_sensor_3b_off = bytearray([
   0x15, 0x55, 0x55, 0x50, 0x0a, 0xaa, 0xaa, 0xa0, 0x15, 0x55, 0x55, 0x00, 0x0a, 0xaa, 0xa8, 0x00,
   0x05, 0x55, 0x40, 0x00, 0x0a, 0xaa, 0x00, 0x00, 0x05, 0x50, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00
 ])
+# 'sensor_3b_on', 32x16px
+bitmap_sensor_3b_on = bytearray([
+  0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x01, 0xe0, 0x00, 0x00, 0x0f, 0xe0, 0x00, 0x00, 0x3f, 0xf0,
+  0x00, 0x01, 0xff, 0xf0, 0x00, 0x1f, 0xff, 0xf8, 0x01, 0xff, 0xff, 0xf8, 0x1f, 0xff, 0xff, 0xfc,
+  0x1f, 0xff, 0xff, 0xf8, 0x1f, 0xff, 0xff, 0xe0, 0x1f, 0xff, 0xff, 0x80, 0x1f, 0xff, 0xfc, 0x00,
+  0x0f, 0xff, 0xe0, 0x00, 0x0f, 0xff, 0x00, 0x00, 0x0f, 0xf0, 0x00, 0x00, 0x0f, 0x00, 0x00, 0x00
+])
 # 'sensor_3c_off', 32x17px
 bitmap_sensor_3c_off = bytearray([
   0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0xa0, 0x00, 0x00, 0x01, 0x50, 0x00, 0x00, 0x0a, 0xa8,
@@ -296,22 +304,6 @@ bitmap_sensor_3c_off = bytearray([
   0x55, 0x55, 0x55, 0x54, 0x2a, 0xaa, 0xaa, 0xa8, 0x15, 0x55, 0x55, 0x40, 0x2a, 0xaa, 0xaa, 0x00,
   0x15, 0x55, 0x50, 0x00, 0x2a, 0xaa, 0x80, 0x00, 0x15, 0x54, 0x00, 0x00, 0x2a, 0xa0, 0x00, 0x00,
   0x14, 0x00, 0x00, 0x00
-])
-# 'sensor_3d_on', 32x18px
-bitmap_sensor_3d_on = bytearray([
-  0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x01, 0xfc, 0x00, 0x00, 0x07, 0xfc,
-  0x00, 0x00, 0x3f, 0xfe, 0x00, 0x01, 0xff, 0xfe, 0x00, 0x1f, 0xff, 0xfe, 0x00, 0xff, 0xff, 0xfe,
-  0x1f, 0xff, 0xff, 0xfc, 0xff, 0xff, 0xff, 0xf8, 0xff, 0xff, 0xff, 0xe0, 0xff, 0xff, 0xff, 0x80,
-  0xff, 0xff, 0xfc, 0x00, 0xff, 0xff, 0xf0, 0x00, 0x7f, 0xff, 0x00, 0x00, 0x7f, 0xf8, 0x00, 0x00,
-  0x7f, 0x80, 0x00, 0x00, 0x70, 0x00, 0x00, 0x00
-])
-# 'sensor_3d_off', 32x18px
-bitmap_sensor_3d_off = bytearray([
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x01, 0x54, 0x00, 0x00, 0x02, 0xa8,
-  0x00, 0x00, 0x15, 0x54, 0x00, 0x00, 0xaa, 0xaa, 0x00, 0x15, 0x55, 0x54, 0x00, 0xaa, 0xaa, 0xaa,
-  0x15, 0x55, 0x55, 0x54, 0xaa, 0xaa, 0xaa, 0xa8, 0x55, 0x55, 0x55, 0x40, 0xaa, 0xaa, 0xaa, 0x80,
-  0x55, 0x55, 0x54, 0x00, 0xaa, 0xaa, 0xa0, 0x00, 0x55, 0x55, 0x00, 0x00, 0x2a, 0xa8, 0x00, 0x00,
-  0x55, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00
 ])
 # 'sensor_3c_on', 32x17px
 bitmap_sensor_3c_on = bytearray([
@@ -321,6 +313,50 @@ bitmap_sensor_3c_on = bytearray([
   0x3f, 0xff, 0xf8, 0x00, 0x3f, 0xff, 0xc0, 0x00, 0x3f, 0xfc, 0x00, 0x00, 0x3f, 0xe0, 0x00, 0x00,
   0x3c, 0x00, 0x00, 0x00
 ])
+# 'sensor_3d_off', 32x18px
+bitmap_sensor_3d_off = bytearray([
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x00, 0x00, 0x01, 0x54, 0x00, 0x00, 0x02, 0xa8,
+  0x00, 0x00, 0x15, 0x54, 0x00, 0x00, 0xaa, 0xaa, 0x00, 0x15, 0x55, 0x54, 0x00, 0xaa, 0xaa, 0xaa,
+  0x15, 0x55, 0x55, 0x54, 0xaa, 0xaa, 0xaa, 0xa8, 0x55, 0x55, 0x55, 0x40, 0xaa, 0xaa, 0xaa, 0x80,
+  0x55, 0x55, 0x54, 0x00, 0xaa, 0xaa, 0xa0, 0x00, 0x55, 0x55, 0x00, 0x00, 0x2a, 0xa8, 0x00, 0x00,
+  0x55, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00
+])
+# 'sensor_3d_on', 32x18px
+bitmap_sensor_3d_on = bytearray([
+  0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00, 0x01, 0xfc, 0x00, 0x00, 0x07, 0xfc,
+  0x00, 0x00, 0x3f, 0xfe, 0x00, 0x01, 0xff, 0xfe, 0x00, 0x1f, 0xff, 0xfe, 0x00, 0xff, 0xff, 0xfe,
+  0x1f, 0xff, 0xff, 0xfc, 0xff, 0xff, 0xff, 0xf8, 0xff, 0xff, 0xff, 0xe0, 0xff, 0xff, 0xff, 0x80,
+  0xff, 0xff, 0xfc, 0x00, 0xff, 0xff, 0xf0, 0x00, 0x7f, 0xff, 0x00, 0x00, 0x7f, 0xf8, 0x00, 0x00,
+  0x7f, 0x80, 0x00, 0x00, 0x70, 0x00, 0x00, 0x00
+])
+# Declare global variables for flipped 1 bitmaps
+flipped_bitmap_sensor_1a_off = bytearray((32 // 8) * 14)
+flipped_bitmap_sensor_1a_on =  bytearray((32 // 8) * 14)
+flipped_bitmap_sensor_1b_off = bytearray((32 // 8) * 16)
+flipped_bitmap_sensor_1b_on =  bytearray((32 // 8) * 16)
+flipped_bitmap_sensor_1c_off = bytearray((32 // 8) * 17)
+flipped_bitmap_sensor_1c_on =  bytearray((32 // 8) * 17)
+flipped_bitmap_sensor_1d_off = bytearray((32 // 8) * 18)
+flipped_bitmap_sensor_1d_on =  bytearray((32 // 8) * 18)
+# Declare global variables for flipped 2 bitmaps
+flipped_bitmap_sensor_2a_off = bytearray((32 // 8) * 9)
+flipped_bitmap_sensor_2a_on =  bytearray((32 // 8) * 9)
+flipped_bitmap_sensor_2b_off = bytearray((32 // 8) * 10)
+flipped_bitmap_sensor_2b_on =  bytearray((32 // 8) * 10)
+flipped_bitmap_sensor_2c_off = bytearray((32 // 8) * 10)
+flipped_bitmap_sensor_2c_on =  bytearray((32 // 8) * 10)
+flipped_bitmap_sensor_2d_off = bytearray((40 // 8) * 10)
+flipped_bitmap_sensor_2d_on =  bytearray((40 // 8) * 10)
+# Declare global variables for flipped 3 bitmaps
+flipped_bitmap_sensor_3a_off = bytearray((32 // 8) * 14)
+flipped_bitmap_sensor_3a_on =  bytearray((32 // 8) * 14)
+flipped_bitmap_sensor_3b_off = bytearray((32 // 8) * 16)
+flipped_bitmap_sensor_3b_on =  bytearray((32 // 8) * 16)
+flipped_bitmap_sensor_3c_off = bytearray((32 // 8) * 17)
+flipped_bitmap_sensor_3c_on =  bytearray((32 // 8) * 17)
+flipped_bitmap_sensor_3d_off = bytearray((32 // 8) * 18)
+flipped_bitmap_sensor_3d_on =  bytearray((32 // 8) * 18)
+#
 # rear 'unit_cm', 24x10px
 bitmap_unit_cm = bytearray([
   0xf0, 0x03, 0xc0, 0x80, 0x00, 0x40, 0xbe, 0xff, 0x40, 0xb6, 0xdb, 0x40, 0x30, 0xdb, 0x00, 0x30,
@@ -359,6 +395,53 @@ def callback_2(pin):
 
 button_1.irq(trigger=Pin.IRQ_FALLING, handler=callback_1)
 button_2.irq(trigger=Pin.IRQ_FALLING, handler=callback_2)
+
+def initialize_flipped_bitmaps():
+    """
+    vertically flip the bitmaps and store them in global variables.
+    """
+    global flipped_bitmap_sensor_1a_off, flipped_bitmap_sensor_1a_on
+    global flipped_bitmap_sensor_1b_off, flipped_bitmap_sensor_1b_on
+    global flipped_bitmap_sensor_1c_off, flipped_bitmap_sensor_1c_on
+    global flipped_bitmap_sensor_1d_off, flipped_bitmap_sensor_1d_on
+    global flipped_bitmap_sensor_2a_off, flipped_bitmap_sensor_2a_on
+    global flipped_bitmap_sensor_2b_off, flipped_bitmap_sensor_2b_on
+    global flipped_bitmap_sensor_2c_off, flipped_bitmap_sensor_2c_on
+    global flipped_bitmap_sensor_2d_off, flipped_bitmap_sensor_2d_on
+    global flipped_bitmap_sensor_3a_off, flipped_bitmap_sensor_3a_on
+    global flipped_bitmap_sensor_3b_off, flipped_bitmap_sensor_3b_on
+    global flipped_bitmap_sensor_3c_off, flipped_bitmap_sensor_3c_on
+    global flipped_bitmap_sensor_3d_off, flipped_bitmap_sensor_3d_on
+    
+    #flip-em
+    # flip bitmaps for later use tile 1 uses flipped tile 3
+    flipped_bitmap_sensor_1a_off = flip_bitmap_vert(bitmap_sensor_3a_off, 32, 14)
+    flipped_bitmap_sensor_1a_on =  flip_bitmap_vert(bitmap_sensor_3a_on, 32, 14)
+    flipped_bitmap_sensor_1b_off = flip_bitmap_vert(bitmap_sensor_3b_off, 32, 16)
+    flipped_bitmap_sensor_1b_on =  flip_bitmap_vert(bitmap_sensor_3b_on, 32, 16)
+    flipped_bitmap_sensor_1c_off = flip_bitmap_vert(bitmap_sensor_3c_off, 32, 17)
+    flipped_bitmap_sensor_1c_on =  flip_bitmap_vert(bitmap_sensor_3c_on, 32, 17)
+    flipped_bitmap_sensor_1d_off = flip_bitmap_vert(bitmap_sensor_3d_off, 32, 18)
+    flipped_bitmap_sensor_1d_on =  flip_bitmap_vert(bitmap_sensor_3d_on, 32, 18)
+    # flip bitmaps for later use tile 2
+    flipped_bitmap_sensor_2a_off = flip_bitmap_vert(bitmap_sensor_2a_off, 32, 9)
+    flipped_bitmap_sensor_2a_on =  flip_bitmap_vert(bitmap_sensor_2a_on, 32, 9)
+    flipped_bitmap_sensor_2b_off = flip_bitmap_vert(bitmap_sensor_2b_off, 32, 9)
+    flipped_bitmap_sensor_2b_on =  flip_bitmap_vert(bitmap_sensor_2b_on, 32, 9)
+    flipped_bitmap_sensor_2c_off = flip_bitmap_vert(bitmap_sensor_2c_off, 32, 10)
+    flipped_bitmap_sensor_2c_on =  flip_bitmap_vert(bitmap_sensor_2c_on, 32, 10)
+    flipped_bitmap_sensor_2d_off = flip_bitmap_vert(bitmap_sensor_2d_off, 40, 10)
+    flipped_bitmap_sensor_2d_on =  flip_bitmap_vert(bitmap_sensor_2d_on, 40, 10)
+    # flip bitmaps for later use tile 3 uses flipped tile 1
+    flipped_bitmap_sensor_3a_off = flip_bitmap_vert(bitmap_sensor_1a_off, 32, 14)
+    flipped_bitmap_sensor_3a_on =  flip_bitmap_vert(bitmap_sensor_1a_on, 32, 14)
+    flipped_bitmap_sensor_3b_off = flip_bitmap_vert(bitmap_sensor_1b_off, 32, 16)
+    flipped_bitmap_sensor_3b_on =  flip_bitmap_vert(bitmap_sensor_1b_on, 32, 16)
+    flipped_bitmap_sensor_3c_off = flip_bitmap_vert(bitmap_sensor_1c_off, 32, 17)
+    flipped_bitmap_sensor_3c_on =  flip_bitmap_vert(bitmap_sensor_1c_on, 32, 17)
+    flipped_bitmap_sensor_3d_off = flip_bitmap_vert(bitmap_sensor_1d_off, 32, 18)
+    flipped_bitmap_sensor_3d_on =  flip_bitmap_vert(bitmap_sensor_1d_on, 32, 18)
+    return
 
 # Helper functions to replace Arduino-specific functions
 def constrain(val, min_val, max_val):
@@ -494,9 +577,9 @@ def flip_bitmap_vert(bitmap, width, height):
     Flip a byte array bitmap vertically.
 
     :param bitmap: byte array of image
-    :param width: The width of the image in pixels (must be divisible by 8)
-    :param height: The height of the image in pixels
-    :return: new byte array with image flipped vertically (top for bottom)
+    :param width: pixel width of the image (must be divisible by 8)
+    :param height: pixel height of the image 
+    :return: vertically flipped bytearray (top for bottom)
     """
     # Each row has `width // 8` bytes (because 8 pixels = 1 byte).
     row_size = width // 8
@@ -512,7 +595,6 @@ def flip_bitmap_vert(bitmap, width, height):
         # Place it in the flipped position in the new byte array.
         flipped_start = (height - y - 1) * row_size
         flipped_bitmap[flipped_start:flipped_start + row_size] = row_data
-
     return flipped_bitmap
 
 
@@ -530,25 +612,6 @@ def blit_white_only(oled, source_fb, w, h, x, y):
         for col in range(w):
             # Extract pixel from the source frame buffer
             pixel = source_fb.pixel(col, row)
-            if pixel == 1:  # Only copy white pixels
-                oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
-
-def blit_white_only_flip(oled, source_fb, w, h, x, y):
-    """
-    Blit the frame buffer as if it is vertically flipped, and only send white pixels one by one.
-    :param oled: display
-    :param source_fb: source frame buffer
-    :param w: width of the framebuffer
-    :param h: height of the framebuffer
-    :param x: x-position for display
-    :param y: y-position for display
-    :return 
-    """
-    for row in range(h):
-        for col in range(w):
-            # Extract pixel from the vertically flipped source frame buffer
-            flipped_row = h - row - 1
-            pixel = source_fb.pixel(col, flipped_row)
             if pixel == 1:  # Only copy white pixels
                 oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
                 
@@ -600,6 +663,18 @@ def display_tiles_dist():
     display_car & temp, Need oled.show() after call
     """
     global sensor, working_sensors, rear, dht_error, debug, dist_step_01, dist_step_02, dist_step_03, dist_step_04
+    global flipped_bitmap_sensor_1a_off, flipped_bitmap_sensor_1a_on
+    global flipped_bitmap_sensor_1b_off, flipped_bitmap_sensor_1b_on
+    global flipped_bitmap_sensor_1c_off, flipped_bitmap_sensor_1c_on
+    global flipped_bitmap_sensor_1d_off, flipped_bitmap_sensor_1d_on
+    global flipped_bitmap_sensor_2a_off, flipped_bitmap_sensor_2a_on
+    global flipped_bitmap_sensor_2b_off, flipped_bitmap_sensor_2b_on
+    global flipped_bitmap_sensor_2c_off, flipped_bitmap_sensor_2c_on
+    global flipped_bitmap_sensor_2d_off, flipped_bitmap_sensor_2d_on
+    global flipped_bitmap_sensor_3a_off, flipped_bitmap_sensor_3a_on
+    global flipped_bitmap_sensor_3b_off, flipped_bitmap_sensor_3b_on
+    global flipped_bitmap_sensor_3c_off, flipped_bitmap_sensor_3c_on
+    global flipped_bitmap_sensor_3d_off, flipped_bitmap_sensor_3d_on
 
     if not working_sensors:
         oled.text(" No Ultrasonic",  5, 30)
@@ -608,7 +683,7 @@ def display_tiles_dist():
 
     for i in working_sensors:
         if rear:
-            # Display bitmap for sensor 2
+            # Display bitmap for sensor 2, since not pixes overlap I can use blit directly
             if sensor[1].cm > dist_step_01:
                 oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32, 9, MONO_HLSB), 48, 23)
             else:
@@ -625,24 +700,6 @@ def display_tiles_dist():
                 oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52)
             else:
                 oled.blit(FrameBuffer(bitmap_sensor_2d_off, 40, 10, MONO_HLSB), 42, 52)
-            
-            # DO NOT LIKE THIS SOLUTION, but couldn't find anotehr way to only
-            # have white pixels updating screen, blit forces all pixes B & W to OLED
-            # NEED FIX black pixels overwrite white, need to 'or' the bits together
-    #         oled.blit(FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB), 24, 17) 
-    #         oled.blit(FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB), 21, 25) 
-    #         oled.blit(FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB), 18, 34)
-    #         oled.blit(FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB), 16, 43)
-    # 
-    #         oled.blit(FrameBuffer(bitmap_sensor_2a_on, 32,  9, MONO_HLSB), 48, 23)
-    #         oled.blit(FrameBuffer(bitmap_sensor_2b_on, 32,  9, MONO_HLSB), 48, 33)
-    #         oled.blit(FrameBuffer(bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, 42)
-    #         oled.blit(FrameBuffer(bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, 52) 
-    # 
-    #         oled.blit(FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB), 72, 17)
-    #         oled.blit(FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB), 74, 25)
-    #         oled.blit(FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB), 77, 34)
-    #         oled.blit(FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB), 80, 43)
 
             # Display bitmap for sensor 1
             if sensor[1].cm > dist_step_01:
@@ -687,76 +744,70 @@ def display_tiles_dist():
             blit_white_only(oled, bmp_3b, 32, 16, 74, 25)
             blit_white_only(oled, bmp_3c, 32, 17, 77, 34)
             blit_white_only(oled, bmp_3d, 32, 18, 80, 43)
-        else:   
-            # Display bitmap for aensor 2
-            if sensor[1].cm > dist_step_01:
-                flipped = flip_bitmap_vert(bitmap_sensor_2a_on, 32, 9)
-                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
-            else:
-                flipped = flip_bitmap_vert(bitmap_sensor_2a_off, 32, 9)
-                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
-            if sensor[1].cm > dist_step_02:
-                flipped = flip_bitmap_vert(bitmap_sensor_2b_on, 32, 9)
-                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
-            else:
-                flipped = flip_bitmap_vert(bitmap_sensor_2b_off, 32, 9)
-                oled.blit(FrameBuffer(flipped, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
-            if sensor[1].cm > dist_step_03:
-                flipped = flip_bitmap_vert(bitmap_sensor_2c_on, 32, 10)
-                oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
-            else:
-                flipped = flip_bitmap_vert(bitmap_sensor_2c_off, 32, 10)
-                oled.blit(FrameBuffer(flipped, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
-            if sensor[1].cm > dist_step_04:
-                flipped = flip_bitmap_vert(bitmap_sensor_2d_on, 40, 10)
-                oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
-            else:
-                flipped = flip_bitmap_vert(bitmap_sensor_2d_off, 40, 10)
-                oled.blit(FrameBuffer(flipped, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
-                
-            # Display bitmap for sensor 3 (notice using images for sendor 3
-            if sensor[1].cm > dist_step_01:
-                bmp_3a = FrameBuffer(bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
-            else:
-                bmp_3a = FrameBuffer(bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
-            if sensor[1].cm > dist_step_02:
-                bmp_3b = FrameBuffer(bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
-            else:
-                bmp_3b = FrameBuffer(bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
-            if sensor[1].cm > dist_step_03:
-                bmp_3c = FrameBuffer(bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
-            else:
-                bmp_3c = FrameBuffer(bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
-            if sensor[1].cm > dist_step_04:
-                bmp_3d = FrameBuffer(bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
-            else:
-                bmp_3d = FrameBuffer(bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
-            blit_white_only_flip(oled, bmp_3a, 32, 14, 72, DISP_HEIGHT-17-14)
-            blit_white_only_flip(oled, bmp_3b, 32, 16, 74, DISP_HEIGHT-25-16)
-            blit_white_only_flip(oled, bmp_3c, 32, 17, 77, DISP_HEIGHT-34-17)
-            blit_white_only_flip(oled, bmp_3d, 32, 18, 80, DISP_HEIGHT-43-18)
             
-            # Display bitmap for sensor 3 (notice using images for sendor 3
+        # This is for flipped displays
+        else:   
+            # Display bitmap for sensor 2, since not pixes overlap I can use blit directly
             if sensor[1].cm > dist_step_01:
-                bmp_1a = FrameBuffer(bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2a_on, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
             else:
-                bmp_1a = FrameBuffer(bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2a_off, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
             if sensor[1].cm > dist_step_02:
-                bmp_1b = FrameBuffer(bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2b_on, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
             else:
-                bmp_1b = FrameBuffer(bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2b_off, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-33-9)
             if sensor[1].cm > dist_step_03:
-                bmp_1c = FrameBuffer(bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2c_on, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
             else:
-                bmp_1c = FrameBuffer(bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2c_off, 32, 10, MONO_HLSB), 47, DISP_HEIGHT-42-10)
             if sensor[1].cm > dist_step_04:
-                bmp_1d = FrameBuffer(bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2d_on, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
             else:
-                bmp_1d = FrameBuffer(bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 80, 43)
-            blit_white_only_flip(oled, bmp_1a, 32, 14, 24, DISP_HEIGHT-17-14)
-            blit_white_only_flip(oled, bmp_1b, 32, 16, 21, DISP_HEIGHT-25-16)
-            blit_white_only_flip(oled, bmp_1c, 32, 17, 18, DISP_HEIGHT-34-17)
-            blit_white_only_flip(oled, bmp_1d, 32, 18, 16, DISP_HEIGHT-43-18)
+                oled.blit(FrameBuffer(flipped_bitmap_sensor_2d_off, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
+                
+            # Display bitmap for sensor 1
+            if sensor[1].cm > dist_step_01:
+                bmp_1a = FrameBuffer(flipped_bitmap_sensor_1a_on, 32, 14, MONO_HLSB)  #, 24, 17)
+            else:
+                bmp_1a = FrameBuffer(flipped_bitmap_sensor_1a_off, 32, 14, MONO_HLSB)  #, 24, 17)
+            if sensor[1].cm > dist_step_02:
+                bmp_1b = FrameBuffer(flipped_bitmap_sensor_1b_on, 32, 16, MONO_HLSB)  #, 21, 25)
+            else:
+                bmp_1b = FrameBuffer(flipped_bitmap_sensor_1b_off, 32, 16, MONO_HLSB)  #, 21, 25)
+            if sensor[1].cm > dist_step_03:
+                bmp_1c = FrameBuffer(flipped_bitmap_sensor_1c_on, 32, 17, MONO_HLSB)  #, 18, 34)
+            else:
+                bmp_1c = FrameBuffer(flipped_bitmap_sensor_1c_off, 32, 17, MONO_HLSB)  #, 18, 34)
+            if sensor[1].cm > dist_step_04:
+                bmp_1d = FrameBuffer(flipped_bitmap_sensor_1d_on, 32, 18, MONO_HLSB)  #, 16, 43)
+            else:
+                bmp_1d = FrameBuffer(flipped_bitmap_sensor_1d_off, 32, 18, MONO_HLSB)  #, 16, 43)
+            blit_white_only(oled, bmp_1a, 32, 14, 72, DISP_HEIGHT-17-14)
+            blit_white_only(oled, bmp_1b, 32, 16, 74, DISP_HEIGHT-25-16)
+            blit_white_only(oled, bmp_1c, 32, 17, 77, DISP_HEIGHT-34-17)
+            blit_white_only(oled, bmp_1d, 32, 18, 80, DISP_HEIGHT-43-18)
+
+            # Display bitmap for sensor 3
+            if sensor[1].cm > dist_step_01:
+                bmp_3a = FrameBuffer(flipped_bitmap_sensor_3a_on, 32, 14, MONO_HLSB)  #, 72, 17)
+            else:
+                bmp_3a = FrameBuffer(flipped_bitmap_sensor_3a_off, 32, 14, MONO_HLSB)  #, 72, 17)
+            if sensor[1].cm > dist_step_02:
+                bmp_3b = FrameBuffer(flipped_bitmap_sensor_3b_on, 32, 16, MONO_HLSB)  #, 74, 25)
+            else:
+                bmp_3b = FrameBuffer(flipped_bitmap_sensor_3b_off, 32, 16, MONO_HLSB)  #, 74, 25)
+            if sensor[1].cm > dist_step_03:
+                bmp_3c = FrameBuffer(flipped_bitmap_sensor_3c_on, 32, 17, MONO_HLSB)  #, 77, 34)
+            else:
+                bmp_3c = FrameBuffer(flipped_bitmap_sensor_3c_off, 32, 17, MONO_HLSB)  #, 77, 34)
+            if sensor[1].cm > dist_step_04:
+                bmp_3d = FrameBuffer(flipped_bitmap_sensor_3d_on, 32, 18, MONO_HLSB)  #, 80, 43)
+            else:
+                bmp_3d = FrameBuffer(flipped_bitmap_sensor_3d_off, 32, 18, MONO_HLSB)  #, 80, 43)
+            blit_white_only(oled, bmp_3a, 32, 14, 24, DISP_HEIGHT-17-14)
+            blit_white_only(oled, bmp_3b, 32, 16, 21, DISP_HEIGHT-25-16)
+            blit_white_only(oled, bmp_3c, 32, 17, 18, DISP_HEIGHT-34-17)
+            blit_white_only(oled, bmp_3d, 32, 18, 16, DISP_HEIGHT-43-18)
 
     for i in working_sensors:
         if metric:
@@ -788,8 +839,9 @@ print("====================================")
 print(implementation[0], uname()[3],
       "\nrun on", uname()[4])
 print("====================================")
-
 print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
+
+initialize_flipped_bitmaps()
 
 # at start display artcar image at top of oled
 temp_c = 20.56
