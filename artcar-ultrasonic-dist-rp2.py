@@ -748,19 +748,19 @@ def display_tiles_dist():
 
         if 0 in working_sensors:
             # Display bitmap for sensor 0
-            if sensor[1].cm > dist_step_01:
+            if sensor[0].cm > dist_step_01:
                 bmp_1a = FrameBuffer(bitmap_sensor_0a_on, 32, 14, MONO_HLSB)  #, 24, 17)
             else:
                 bmp_1a = FrameBuffer(bitmap_sensor_0a_off, 32, 14, MONO_HLSB)  #, 24, 17)
-            if sensor[1].cm > dist_step_02:
+            if sensor[0].cm > dist_step_02:
                 bmp_1b = FrameBuffer(bitmap_sensor_0b_on, 32, 16, MONO_HLSB)  #, 21, 25)
             else:
                 bmp_1b = FrameBuffer(bitmap_sensor_0b_off, 32, 16, MONO_HLSB)  #, 21, 25)
-            if sensor[1].cm > dist_step_03:
+            if sensor[0].cm > dist_step_03:
                 bmp_1c = FrameBuffer(bitmap_sensor_0c_on, 32, 17, MONO_HLSB)  #, 18, 34)
             else:
                 bmp_1c = FrameBuffer(bitmap_sensor_0c_off, 32, 17, MONO_HLSB)  #, 18, 34)
-            if sensor[1].cm > dist_step_04:
+            if sensor[0].cm > dist_step_04:
                 bmp_1d = FrameBuffer(bitmap_sensor_0d_on, 32, 18, MONO_HLSB)  #, 16, 43)
             else:
                 bmp_1d = FrameBuffer(bitmap_sensor_0d_off, 32, 18, MONO_HLSB)  #, 16, 43)
@@ -771,19 +771,19 @@ def display_tiles_dist():
 
         if 2 in working_sensors:
             # Display bitmap for sensor 2
-            if sensor[1].cm > dist_step_01:
+            if sensor[2].cm > dist_step_01:
                 bmp_3a = FrameBuffer(bitmap_sensor_2a_on, 32, 14, MONO_HLSB)  #, 72, 17)
             else:
                 bmp_3a = FrameBuffer(bitmap_sensor_2a_off, 32, 14, MONO_HLSB)  #, 72, 17)
-            if sensor[1].cm > dist_step_02:
+            if sensor[2].cm > dist_step_02:
                 bmp_3b = FrameBuffer(bitmap_sensor_2b_on, 32, 16, MONO_HLSB)  #, 74, 25)
             else:
                 bmp_3b = FrameBuffer(bitmap_sensor_2b_off, 32, 16, MONO_HLSB)  #, 74, 25)
-            if sensor[1].cm > dist_step_03:
+            if sensor[2].cm > dist_step_03:
                 bmp_3c = FrameBuffer(bitmap_sensor_2c_on, 32, 17, MONO_HLSB)  #, 77, 34)
             else:
                 bmp_3c = FrameBuffer(bitmap_sensor_2c_off, 32, 17, MONO_HLSB)  #, 77, 34)
-            if sensor[1].cm > dist_step_04:
+            if sensor[2].cm > dist_step_04:
                 bmp_3d = FrameBuffer(bitmap_sensor_2d_on, 32, 18, MONO_HLSB)  #, 80, 43)
             else:
                 bmp_3d = FrameBuffer(bitmap_sensor_2d_off, 32, 18, MONO_HLSB)  #, 80, 43)
@@ -815,19 +815,19 @@ def display_tiles_dist():
         
         if 0 in working_sensors:
             # Display bitmap for sensor 0
-            if sensor[1].cm > dist_step_01:
+            if sensor[2].cm > dist_step_01:
                 bmp_1a = FrameBuffer(flipped_bitmap_sensor_0a_on, 32, 14, MONO_HLSB)
             else:
                 bmp_1a = FrameBuffer(flipped_bitmap_sensor_0a_off, 32, 14, MONO_HLSB)
-            if sensor[1].cm > dist_step_02:
+            if sensor[2].cm > dist_step_02:
                 bmp_1b = FrameBuffer(flipped_bitmap_sensor_0b_on, 32, 16, MONO_HLSB)
             else:
                 bmp_1b = FrameBuffer(flipped_bitmap_sensor_0b_off, 32, 16, MONO_HLSB)
-            if sensor[1].cm > dist_step_03:
+            if sensor[2].cm > dist_step_03:
                 bmp_1c = FrameBuffer(flipped_bitmap_sensor_0c_on, 32, 17, MONO_HLSB)
             else:
                 bmp_1c = FrameBuffer(flipped_bitmap_sensor_0c_off, 32, 17, MONO_HLSB)
-            if sensor[1].cm > dist_step_04:
+            if sensor[2].cm > dist_step_04:
                 bmp_1d = FrameBuffer(flipped_bitmap_sensor_0d_on, 32, 18, MONO_HLSB)
             else:
                 bmp_1d = FrameBuffer(flipped_bitmap_sensor_0d_off, 32, 18, MONO_HLSB)
@@ -837,20 +837,20 @@ def display_tiles_dist():
             blit_white_only(oled, bmp_1d, 32, 18, 80, DISP_HEIGHT-43-18)
 
         if 2 in working_sensors:
-            # Display bitmap for sensor 3
-            if sensor[1].cm > dist_step_01:
+            # Display bitmap for sensor 2
+            if sensor[0].cm > dist_step_01:
                 bmp_3a = FrameBuffer(flipped_bitmap_sensor_2a_on, 32, 14, MONO_HLSB)
             else:
                 bmp_3a = FrameBuffer(flipped_bitmap_sensor_2a_off, 32, 14, MONO_HLSB)
-            if sensor[1].cm > dist_step_02:
+            if sensor[0].cm > dist_step_02:
                 bmp_3b = FrameBuffer(flipped_bitmap_sensor_2b_on, 32, 16, MONO_HLSB)
             else:
                 bmp_3b = FrameBuffer(flipped_bitmap_sensor_2b_off, 32, 16, MONO_HLSB)
-            if sensor[1].cm > dist_step_03:
+            if sensor[0].cm > dist_step_03:
                 bmp_3c = FrameBuffer(flipped_bitmap_sensor_2c_on, 32, 17, MONO_HLSB)
             else:
                 bmp_3c = FrameBuffer(flipped_bitmap_sensor_2c_off, 32, 17, MONO_HLSB)
-            if sensor[1].cm > dist_step_04:
+            if sensor[0].cm > dist_step_04:
                 bmp_3d = FrameBuffer(flipped_bitmap_sensor_2d_on, 32, 18, MONO_HLSB)
             else:
                 bmp_3d = FrameBuffer(flipped_bitmap_sensor_2d_off, 32, 18, MONO_HLSB)
@@ -859,11 +859,12 @@ def display_tiles_dist():
             blit_white_only(oled, bmp_3c, 32, 17, 18, DISP_HEIGHT-34-17)
             blit_white_only(oled, bmp_3d, 32, 18, 16, DISP_HEIGHT-43-18)
 
+    #round to nearest
     for i in working_sensors:
         if metric:
-            int_string = str(int(sensor[i].cm))
+            int_string = str(int(sensor[i].cm + 0.5))
         else:
-            int_string = str(int(sensor[i].inch))
+            int_string = str(int(sensor[i].inch + 0.5))
         digits = get_str_width(int_string)
         
         startpos_x = sensor[i].label_startpos_x + (3-digits)*4
@@ -924,6 +925,7 @@ for i in range(NUMBER_OF_SENSORS):
         working_sensors.append(i)
     else:
         nonworking_sensors.append(i)
+
 print(f"Working Ultrasonic sensors: {working_sensors}")
 print(f"Non-working Ultrasonic sensors: {nonworking_sensors}")
 
@@ -958,6 +960,14 @@ while True:
         #get distance from ultrasonic sensor, 30ms round trip 514cm or 202in
         sensor[i].cm = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
         sensor[i].inch = sensor[i].cm/2.54
+        
+#     # DEBUG  !!!!!!! DEBUG
+#     sensor[0].cm = 84
+#     sensor[0].inch = sensor[0].cm/2.54
+#     sensor[1].cm = 56.8
+#     sensor[1].inch = sensor[1].cm/2.54
+#     sensor[2].cm = 18.1
+#     sensor[2].inch = sensor[2].cm/2.54
     # TODO - FIX THIS, now only dummy up three sensors
 #     sensor[0].cm = sensor[1].cm
 #     sensor[0].inch = sensor[1].inch
