@@ -506,11 +506,12 @@ def ultrasonic_distance_uart(i):
     Byte 2 – Data 0 – low end of the 16-bit data.
     Byte 3 – Checksum – addition of previous 3 (B0 + B1 + B2). Only lower 8-bits are held here.
 
-    A02YYUW    +/- 0.2cm,  3cm to 450cm, $16, only outputs UART serial data
+    A02YYUW: 3.3v to 5v, +/- 0.2cm,  3cm to 450cm, $16, only outputs UART serial data, RS485 output, 8mA
      - outputs serial data UART
      - RX pin controls the data output.
        - HIGH or not connected (internal pulled up) then results every 300ms.
        - RX pin held LOW then results every 100ms. (less accurate)
+       - TODO: find out what connector type is
     JSN-SR04T: +/1 1.0mc, 20cm to 600cm, $10,
      - Mode 0(default): must measure, use ultrasonic_distance_pwm() code instead
      - Mode 1: outputs serial data UART, measurement every 200ms. You read the data on the Echo pin
@@ -518,6 +519,10 @@ def ultrasonic_distance_uart(i):
      - likely doesn't have temp correction
     https://dronebotworkshop.com/waterproof-ultrasonic/
     https://www.amazon.com/Ultrasonic-Distance-Controlled-Detector-Waterproof/dp/B0CFFTS71Y/
+    
+    TODO:
+    * need RS-485 twisted pair Data Serial Bulk Cable: 24 AWG
+    * PH2.0-4P Connector x1 used by A02YYUW
     
     :param i (int): index for ultrasonic sensor.
     :returns: cm distance or an error value.
