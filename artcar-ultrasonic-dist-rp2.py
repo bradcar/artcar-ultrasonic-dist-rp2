@@ -530,7 +530,6 @@ def ultrasonic_distance_uart(i):
     # https://forum.makerforums.info/t/a02yyuw-waterproof-ultrasonic-sensor/87359/18
     print("ultrasonic_distance_uart - NOT IMPLEMENTED")
     return
-
     
 def ultrasonic_distance_pwm(i, speed, timeout=50000):
     """
