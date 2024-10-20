@@ -27,6 +27,20 @@ Useful sites:
   * Also add MosFET protection
     * RP recommended DMG-2305ux, but this is surface mount MosFET
     * investigating RLB8721, that way can hook laptop up in car to update SW
+   
+Images of project:
+
+Car display for rear sensors (Imperial units: inches, ft/s, F)
+[Car display for rear sensors Imperial Units](bradcar/artcar-ultrasonic-dist-rp2/main/imgs/car-back-display-imperial.jpg)
+
+Car display for rear sensors (Metric units: cm, m/s, C)
+[Car display for rear sensors Metric Units](bradcar/artcar-ultrasonic-dist-rp2/main/imgs/car-back-display-metric.jpg)
+
+Car display for front sensors (Imperial units: inches, ft/s, F)
+[Car display for front sensors Imperial Units](bradcar/artcar-ultrasonic-dist-rp2/main/imgs/car-front-display-imperial.jpg)
+
+Environment display (Imperial units: inches, ft/s, F)
+[Car display for Environment Imperial Units](bradcar/artcar-ultrasonic-dist-rp2/main/imgs/env-display-imperial.jpg)
 
 Other useful sites (but not used in this code):
 * MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
