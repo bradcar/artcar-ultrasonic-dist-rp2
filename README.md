@@ -18,3 +18,8 @@ Other Useful sites:
   * get Buck converter 12v to 5v (usb-b to micro-usb)
   * Also have MosFET protection (recommended DMG-2305ux MosFET), that way I can hook laptop up in car to update SW
 * MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
+
+Note: Temp & humidity correction for the speed of sound
+* speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
+* speed of sound at 30C goes with a humidity of 0% to 90% goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
+* ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
