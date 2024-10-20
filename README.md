@@ -31,7 +31,7 @@ Useful sites:
 Images of project:
 
 Car display for rear sensors (Imperial units: inches, ft/s, F)
-[Car display for rear sensors Imperial Units](blob/main/imgs/car-back-display-imperial.jpg)
+[Car display for rear sensors Imperial Units](imgs/car-back-display-imperial.jpg)
 https://github.com/bradcar/artcar-ultrasonic-dist-rp2/blob/main/bradcar/artcar-ultrasonic-dist-rp2/blob/main/imgs/car-back-display-imperial.jpg
 
 Car display for rear sensors (Metric units: cm, m/s, C)
