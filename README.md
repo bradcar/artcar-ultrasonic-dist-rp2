@@ -28,7 +28,7 @@ Useful sites:
     * RP recommended DMG-2305ux, but this is surface mount MosFET
     * investigating RLB8721, that way can hook laptop up in car to update SW
    
-Images of project:
+Project images:
 
 Car display for rear sensors (Imperial units: inches, ft/s, F)
 
