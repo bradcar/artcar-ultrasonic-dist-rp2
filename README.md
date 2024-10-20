@@ -31,17 +31,16 @@ Useful sites:
 Images of project:
 
 Car display for rear sensors (Imperial units: inches, ft/s, F)
-[Car display for rear sensors Imperial Units](imgs/car-back-display-imperial.jpg)
-https://github.com/bradcar/artcar-ultrasonic-dist-rp2/blob/main/bradcar/artcar-ultrasonic-dist-rp2/blob/main/imgs/car-back-display-imperial.jpg
+![Car display for rear sensors Imperial Units](imgs/car-back-display-imperial.jpg)
 
 Car display for rear sensors (Metric units: cm, m/s, C)
-[Car display for rear sensors Metric Units](bradcar/artcar-ultrasonic-dist-rp2/blob/main/imgs/car-back-display-metric.jpg)
+![Car display for rear sensors Metric Units](imgs/car-back-display-metric.jpg)
 
 Car display for front sensors (Imperial units: inches, ft/s, F)
-[Car display for front sensors Imperial Units](bradcar/artcar-ultrasonic-dist-rp2/blob/main/imgs/car-front-display-imperial.jpg)
+![Car display for front sensors Imperial Units](imgs/car-front-display-imperial.jpg)
 
 Environment display (Imperial units: inches, ft/s, F)
-[Car display for Environment Imperial Units](bradcar/artcar-ultrasonic-dist-rp2/blob/main/imgs/env-display-imperial.jpg)
+![Car display for Environment Imperial Units](imgs/env-display-imperial.jpg)
 
 Other useful sites (but not used in this code):
 * MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
