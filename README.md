@@ -11,7 +11,7 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * up to 3x Ultrasonic sensors are polled for distances (PWM - timed for distances)
 * TODO: up to 3x Ultrasonic sensors are polled for distances (UART - read distances)
 
-## Based on UPIR's GREAT work: https://github.com/upiir/arduino_parking_sensor created by upir in 2022
+## Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
 * UPIR youtube channel: https://www.youtube.com/upir_upir
 * UPIR youtube full video: https://youtu.be/gg08H-6Z1Lo
 * UPIR Github: https://github.com/upiir/arduino_parking_sensor
