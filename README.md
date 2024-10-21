@@ -4,7 +4,7 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * To see my Art Car, 5th image down on https://en.wikipedia.org/wiki/Art_car, the one with the caption: "Unofficial BMW Art Car by Tom Cramer..."
 
 ## Features of this Raspberry Pi Pico 2 code:
-* SSD1309 - uses SSD1306, have SDI & I2C code, SDI faster
+* SSD1309 - uses SSD1306 sw, both SDI & I2C code - SDI is faster
 * button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * DHT22 - for temp & humidity
 * uses ssd1306 print & blit(FrameBuffer) of bitmap images
