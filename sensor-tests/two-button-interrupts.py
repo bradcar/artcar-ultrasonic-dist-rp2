@@ -22,7 +22,7 @@ led = Pin(25, Pin.OUT)
 flag_1 = True
 flag_2 = False
 
-# ==== Original 1 flag ===
+# ==== Original 1 button callback implementation ===
 # def callback(pin):
 #     global interrupt_1_flag, debounce_1_time
 #     if (time.ticks_ms()-debounce_1_time) > 500:
