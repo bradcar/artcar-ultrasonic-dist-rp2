@@ -727,6 +727,7 @@ def display_tiles_dist():
 
 
     if rear:
+        #Middle
         if 1 in working_sensors:
             # Display bitmap for sensor 1, since no pixels overlap we can use blit directly
             if sensor[1].cm > dist_step_01:
@@ -746,6 +747,7 @@ def display_tiles_dist():
             else:
                 oled.blit(FrameBuffer(bitmap_sensor_1d_off, 40, 10, MONO_HLSB), 42, 52)
 
+        # left sensor
         if 0 in working_sensors:
             # Display bitmap for sensor 0
             if sensor[0].cm > dist_step_01:
@@ -769,6 +771,7 @@ def display_tiles_dist():
             blit_white_only(oled, bmp_1c, 32, 17, 18, 34)
             blit_white_only(oled, bmp_1d, 32, 18, 16, 43)
 
+        # right sensor
         if 2 in working_sensors:
             # Display bitmap for sensor 2
             if sensor[2].cm > dist_step_01:
@@ -794,6 +797,7 @@ def display_tiles_dist():
         
     # This is for flipped displays
     else:
+        # middle sensor
         if 1 in working_sensors:
             # Display bitmap for sensor 1, since not pixels overlap, we can blit directly
             if sensor[1].cm > dist_step_01:
@@ -812,7 +816,8 @@ def display_tiles_dist():
                 oled.blit(FrameBuffer(flipped_bitmap_sensor_1d_on, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
             else:
                 oled.blit(FrameBuffer(flipped_bitmap_sensor_1d_off, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
-        
+     
+        # left sensor
         if 0 in working_sensors:
             # Display bitmap for sensor 0
             if sensor[2].cm > dist_step_01:
@@ -836,6 +841,7 @@ def display_tiles_dist():
             blit_white_only(oled, bmp_1c, 32, 17, 77, DISP_HEIGHT-34-17)
             blit_white_only(oled, bmp_1d, 32, 18, 80, DISP_HEIGHT-43-18)
 
+        # right sensor
         if 2 in working_sensors:
             # Display bitmap for sensor 2
             if sensor[0].cm > dist_step_01:
@@ -956,23 +962,11 @@ while True:
         loop_time = time.ticks_ms()
         speed_sound, temp_c, temp_f, humidity = calc_speed_sound(speed_sound, temp_c, temp_f, humidity)
     
+    # left front/rear = 0, middle=1  right front/rear =2
     for i in working_sensors:
         #get distance from ultrasonic sensor, 30ms round trip 514cm or 202in
         sensor[i].cm = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
         sensor[i].inch = sensor[i].cm/2.54
-        
-#     # DEBUG  !!!!!!! DEBUG
-#     sensor[0].cm = 84
-#     sensor[0].inch = sensor[0].cm/2.54
-#     sensor[1].cm = 56.8
-#     sensor[1].inch = sensor[1].cm/2.54
-#     sensor[2].cm = 18.1
-#     sensor[2].inch = sensor[2].cm/2.54
-    # TODO - FIX THIS, now only dummy up three sensors
-#     sensor[0].cm = sensor[1].cm
-#     sensor[0].inch = sensor[1].inch
-#     sensor[2].cm = sensor[1].cm
-#     sensor[2].inch = sensor[1].inch
     
     if show_env:
         if working_sensors:
