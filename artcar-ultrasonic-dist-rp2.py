@@ -373,7 +373,7 @@ degree_temp = bytearray([
 ])
 
 rear = True
-show_env = False
+show_env = True
 metric = False
 dht_error = False
 debug = False
@@ -410,7 +410,7 @@ def initialize_flipped_bitmaps():
     global flipped_bitmap_sensor_2d_off, flipped_bitmap_sensor_2d_on
     
     #flip-em
-    # flip bitmaps for later use tile 1 uses flipped tile 3
+    # flip bitmaps: for front tile 1, use rear flipped tile 3
     flipped_bitmap_sensor_0a_off = flip_bitmap_vert(bitmap_sensor_2a_off, 32, 14)
     flipped_bitmap_sensor_0a_on =  flip_bitmap_vert(bitmap_sensor_2a_on, 32, 14)
     flipped_bitmap_sensor_0b_off = flip_bitmap_vert(bitmap_sensor_2b_off, 32, 16)
@@ -419,7 +419,7 @@ def initialize_flipped_bitmaps():
     flipped_bitmap_sensor_0c_on =  flip_bitmap_vert(bitmap_sensor_2c_on, 32, 17)
     flipped_bitmap_sensor_0d_off = flip_bitmap_vert(bitmap_sensor_2d_off, 32, 18)
     flipped_bitmap_sensor_0d_on =  flip_bitmap_vert(bitmap_sensor_2d_on, 32, 18)
-    # flip bitmaps for later use tile 2
+    # flip bitmaps: middle tile 2 is same for front/rear
     flipped_bitmap_sensor_1a_off = flip_bitmap_vert(bitmap_sensor_1a_off, 32, 9)
     flipped_bitmap_sensor_1a_on =  flip_bitmap_vert(bitmap_sensor_1a_on, 32, 9)
     flipped_bitmap_sensor_1b_off = flip_bitmap_vert(bitmap_sensor_1b_off, 32, 9)
@@ -428,7 +428,7 @@ def initialize_flipped_bitmaps():
     flipped_bitmap_sensor_1c_on =  flip_bitmap_vert(bitmap_sensor_1c_on, 32, 10)
     flipped_bitmap_sensor_1d_off = flip_bitmap_vert(bitmap_sensor_1d_off, 40, 10)
     flipped_bitmap_sensor_1d_on =  flip_bitmap_vert(bitmap_sensor_1d_on, 40, 10)
-    # flip bitmaps for later use tile 3 uses flipped tile 1
+    # flip bitmaps: for front tile 1, use rear flipped tile 3
     flipped_bitmap_sensor_2a_off = flip_bitmap_vert(bitmap_sensor_0a_off, 32, 14)
     flipped_bitmap_sensor_2a_on =  flip_bitmap_vert(bitmap_sensor_0a_on, 32, 14)
     flipped_bitmap_sensor_2b_off = flip_bitmap_vert(bitmap_sensor_0b_off, 32, 16)
@@ -450,7 +450,7 @@ def get_str_width(text):
     # MicroPython has 8x8 fonts  x*9-1 ?
     return len(text) 
     
-def calc_speed_sound():
+def calc_speed_sound_from_dht():
     """
     calc to update speed of sound based on temp & humidity from the DHT22 sensor
     """
@@ -915,19 +915,16 @@ while True:
     # ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
     if elapsed_time > 3000:
         loop_time = time.ticks_ms()
-        calc_speed_sound()
+        calc_speed_sound_from_dht()
     
-    # left front/rear = 0, middle=1  right front/rear =2
+    #get distance from ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
+    # sensors: left front/rear = 0, middle=1  right front/rear =2
     for i in working_sensors:
-        #get distance from ultrasonic sensor, 30ms round trip 514cm or 202in
         sensor[i].cm = ultrasonic_distance_pwm(i, timeout=30000)
         sensor[i].inch = sensor[i].cm/2.54
     
     if show_env:
-        if working_sensors:
-            display_environment(sensor[working_sensors[0]].cm)
-        else:
-            display_environment(-1.0)
+        display_environment(sensor[working_sensors[0]].cm if working_sensors else -1.0)
     else:
         oled.fill(0)
         display_car()
