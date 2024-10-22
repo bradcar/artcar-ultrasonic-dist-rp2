@@ -2,6 +2,7 @@
 #
 # SSD1309 OLED Display - 1306 SW: SDI driver  print, bitmaps, & drawing to frameBuffer
 # i2c also included commented out
+# by bradcar
 #
 # https://micropython.org/download/RPI_PICO2/ for latest .uf2 preview
 # https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
