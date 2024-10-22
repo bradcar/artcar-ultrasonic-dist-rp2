@@ -1,6 +1,7 @@
 # Raspberry Pi Pico 2 project - ArtCar ultrasonic - Oct 2024
 #
-# dht22 -temp & humidity - calculate the speed of sound based on this
+# dht22 -temp & humidity - calculate the speed of sound based on temp/humidity
+# by bradcar
 
 from machine import Pin
 import machine
