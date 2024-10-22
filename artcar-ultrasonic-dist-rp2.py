@@ -15,6 +15,7 @@
 #
 #    Raspberry Pi GitHub: https://github.com/bradcar/artcar-ultrasonic-dist-rp2
 #    Arduino GitHub:      https://github.com/bradcar/art-car-ultrasonic-dist
+#    # by bradcar
 #
 # project Based on GREAT work by upir!!!
 #     youTube full video: https://youtu.be/gg08H-6Z1Lo
