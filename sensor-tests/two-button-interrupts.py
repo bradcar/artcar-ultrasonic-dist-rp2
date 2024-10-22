@@ -3,6 +3,7 @@
 # Two Button debouncer with efficient interrupts, which don't take CPU cycles!
 # Based on one-button
 # https://electrocredible.com/raspberry-pi-pico-external-interrupts-button-micropython/
+# by bradcar
 
 from machine import Pin
 import time
