@@ -8,7 +8,7 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
   * ssd1306 Framebuffer-based SW for print & blit of bitmap images
 * button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * DHT22 - for temp & humidity
-* DS18B20 - waterproof outdoor temp that uses onewrite protocol
+* DS18B20 - waterproof outdoor temp that uses onewire protocol
 * HC-SR04 or JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances)
 * TODO A02YYUW: 1x to 3x Ultrasonic sensors are polled for distances (UART - read distances from device)
 
