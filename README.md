@@ -9,8 +9,8 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * DHT22 - for temp & humidity
 * DS18B20 - waterproof outdoor temp that uses onewrite protocol
-* 1x to 3x Ultrasonic sensors are polled for distances (PWM - timed for distances)
-* TODO: 1x to 3x Ultrasonic sensors are polled for distances (UART - read distances)
+* HC-SR04 or JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances)
+* TODO A02YYUW: 1x to 3x Ultrasonic sensors are polled for distances (UART - read distances from device)
 
 ## Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
 * UPIR youtube channel: https://www.youtube.com/upir_upir
