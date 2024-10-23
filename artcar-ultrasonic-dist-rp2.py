@@ -57,9 +57,8 @@ class SensorData:
     def __init__(self, echo_pin, trig_pin):
         self.trig_pin = trig_pin    # TRIG pin for the ultrasonic distance 
         self.echo_pin = echo_pin    # ECHO pin for the ultrasonic distance 
-        self.measured_ms = 0        # measured milliseconds
-        self.cm = 0.0               # measured distance in CM
-        self.inch = 0.0             # measured distance in inches
+        self.cm = None              # measured distance in CM
+        self.inch = None            # measured distance in inches
         self.label_xpos = 0         # x position of the distance label
         self.label_ypos = 0         # y position of the distance label
         self.label_width = 0        # calculated width of the distance string
@@ -634,6 +633,8 @@ def display_environment(dist):
     """
     display just environment readings & car image(for fun)
     No need to oled.fill(0) before or oled.show() after call
+    
+    TODO: update error handling
 
     param:dist:  distance if dist = -1.0 then display error
     """    
@@ -647,13 +648,13 @@ def display_environment(dist):
         oled.text(f"Humid= {humidity:.1f}%", 0, 12)
         if metric:
             oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
-            if dist != -1.0:
+            if dist:
                 oled.text(f"Dist= {dist:.0f}cm", 0, 55)
             else:
                 oled.text(f"No ultrasonic", 0, 55)
         else:
             oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
-            if dist != -1.0:
+            if dist:
                 oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
             else:
                 oled.text(f"No ultrasonic", 0, 55)
@@ -711,6 +712,9 @@ def blit_white_only(source_fb, w, h, x, y):
 def display_car (celcius, farenheit):
     """
     display_car & temp, Need oled.fill(0) before call & oled.show() after call
+    
+    :param celcius: temp in C to display
+    :param farenheit: temp in F to display
     """    
     if rear:
         oled.blit(FrameBuffer(bitmap_artcar_image_back,56,15, MONO_HLSB), 36, 0)
@@ -945,16 +949,14 @@ display_car(None, None)
 oled.show()
 zzz(3)
 
-# check status of DHT sensor
-temp_c, humidity, error = dht_temp_humidity()
+# check status of DHT sensor, do not keep any measurements
+_, _, error = dht_temp_humidity()
 if error:
     oled.text("Error DHT22", 0, 24)
     oled.text(str(error), 0, 36)
     oled.show()
     temp_c = None
     humidity = None
-else:
-    temp_f = (temp_c * 9.0 / 5.0) + 32.0
 
 working_ultrasonics = []
 nonworking_ultrasonics = []
@@ -1019,6 +1021,7 @@ while True:
             sensor[i].inch = sensor[i].cm/2.54
     
     if show_env:
+        #pick first working ultrasonic to show
         display_environment(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0)
     else:
         oled.fill(0)
