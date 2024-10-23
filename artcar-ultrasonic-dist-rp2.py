@@ -382,6 +382,7 @@ rear = True
 show_env = True
 metric = False
 dht_error = False
+ds_error = False
 debug = False
 
 # Button debouncer with efficient interrupts, which don't take CPU cycles!
@@ -454,7 +455,31 @@ def map_range(value, in_min, in_max, out_min, out_max):
 
 def get_str_width(text):
     # MicroPython has 8x8 fonts  x*9-1 ?
-    return len(text) 
+    return len(text)
+
+def outside_temp_ds():
+    """
+    calc to update speed of sound based on temp & humidity from the DHT22 sensor
+    """
+    global ds_error
+    
+    try:
+        ds_sensor.convert_temp()
+    except onewire.OneWireError as error:
+        try:
+            print("DS temp onewire: " + str(error) + '\n')
+            ds_error = True
+        except OSError:
+            pass
+    
+    # must sleep 750ms before read 1st value
+    zzz(.75)
+  
+    for rom in roms:
+        tempc = ds_sensor.read_temp(rom)
+        tempf = tempc * (9/5) + 32
+        if debug: print(f"rom={rom}\n  tempC={tempc:.2f}")
+    return tempc, tempf
     
 def calc_speed_sound_from_dht():
     """
@@ -861,6 +886,10 @@ print(implementation[0], uname()[3],
 print("====================================")
 print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
 
+# roms will be a list of sensors on same GPIO pin
+roms = ds_sensor.scan()
+print('Found DS devices: ', roms)
+
 initialize_flipped_bitmaps()
 
 # at start display artcar image at top of oled
@@ -923,6 +952,10 @@ while True:
     if elapsed_time > 3000:
         loop_time = time.ticks_ms()
         calc_speed_sound_from_dht()
+        
+        # Outside temp from waterproof ds sensor, ourside temps not used yet in this code
+        outside_temp_c, outside_temp_f = outside_temp_ds()
+        if debug: print (f"dht temp C = {temp_c:.2f}  Outside temp C = {outside_temp_c:.2f}")
     
     #get distance from ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
     # sensors: left front/rear = 0, middle=1  right front/rear =2
