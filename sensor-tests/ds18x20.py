@@ -27,15 +27,25 @@ roms = ds_sensor.scan()
 print('Found DS devices: ', roms)
 
 while True:
+# Error catching code
+#     try:
+#         ds_sensor.convert_temp()
+#     except onewire.OneWireError as error:
+#         try:
+#             print("DS temp onewire: " + str(error) + '\n')
+#             ds_error = True
+#         except OSError:
+#             pass
+    
     ds_sensor.convert_temp()
-    # must sleep .75s or 750ms before read 1st value
+    # must sleep 750ms before read 1st value
     zzz(.75)
   
     for rom in roms:
         print(rom)
         
         tempC = ds_sensor.read_temp(rom)
-        tempF = tempC * (9/5) +32
+        tempF = tempC * (9/5) + 32
         print(f"temperature = {tempC:.2f}°C   = {tempF:.2f}°F\n")
     
     zzz(1)
