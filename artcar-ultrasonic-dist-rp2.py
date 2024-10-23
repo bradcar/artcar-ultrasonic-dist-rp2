@@ -379,7 +379,7 @@ degree_temp = bytearray([
 ])
 
 rear = True
-show_env = True
+show_env = False
 metric = False
 dht_error = False
 ds_error = False
@@ -469,6 +469,7 @@ def outside_temp_ds():
         try:
             print("DS temp onewire: " + str(error) + '\n')
             ds_error = True
+            return None, "ERROR_DS_TEMP_ONEWIRE:"+ str(error)
         except OSError:
             pass
     
@@ -476,10 +477,53 @@ def outside_temp_ds():
     zzz(.75)
   
     for rom in roms:
-        tempc = ds_sensor.read_temp(rom)
-        tempf = tempc * (9/5) + 32
-        if debug: print(f"rom={rom}\n  tempC={tempc:.2f}")
-    return tempc, tempf
+        celcius = ds_sensor.read_temp(rom)
+        if debug: print(f"rom={rom}\n  tempC={celcius:.2f}")
+    return celcius, None
+
+   
+def calc_speed_sound(celcius, percent_humidity):
+    """
+    calc to update speed of sound based on temp & humidity from the DHT22 sensor
+    
+    :param temp: temp in celcius
+    :param humdity: % humidity
+    :returns: speed meter/sec, error string
+    """
+    if celcius != None or percent_humidity != None:
+        # Speed sound with temp correction: (20.05 * sqrt(273.16 + temp_c))
+        # online temp/humid calc: http://resource.npl.co.uk/acoustics/techguides/speedair/
+        # created spreadsheet of diffs between online temp/humid and temp formula
+        # did a 2d linear fit to create my own correction, error is now +/-0.07%
+        # valid for 0C to 30C temp & 75 to 102 kPa pressure
+        meter_per_sec = (20.05 * sqrt(273.16 + celcius)) \
+                      + (0.0006545 * percent_humidity + 0.00475) * temp \
+                      + (0.001057 * percent_humidity + 0.07121)
+        return meter_per_sec, None
+    else:
+        return None, f"ERROR_INVALID_SOUND_SPEED:temp={temp},humidity={percent_humidity}"
+    
+def dht_temp_humidity():
+    """
+    read temp & humidity from the DHT22 sensor
+    
+    :param temp: temp in celcius
+    :param humdity: % humidity
+    :returns: celcius, percent_humidity, error string
+    """
+    
+    try:
+        dht_sensor.measure()
+        celcius = dht_sensor.temperature()
+        percent_humidity = dht_sensor.humidity()
+        if debug:
+            print(f"DHT Temp °C : {temp_c:.2f}")
+            print(f"DHT Temp °F : {temp_f:.2f}")
+            print(f"DHT Humidity: {humidity:.2f}%")
+    except Exception as error:
+        return None, None, "ERROR_TEMP_HUMID:"+str(error)
+
+    return celcius, percent_humidity, None
     
 def calc_speed_sound_from_dht():
     """
@@ -548,7 +592,7 @@ def ultrasonic_distance_uart(i):
     print(f"ultrasonic_distance_uart #{i} - NO code IMPLEMENTED")
     return
     
-def ultrasonic_distance_pwm(i, timeout=50000):
+def ultrasonic_distance_pwm(i, speed_of_sound, timeout=50000):
     """
     Get ultrasonic distance from a sensor where ping and measure with a timeout.
     
@@ -558,8 +602,9 @@ def ultrasonic_distance_pwm(i, timeout=50000):
     https://dronebotworkshop.com/waterproof-ultrasonic/
     
     :param i: index for ultrasonic sensor.
+    :param speed_of_sound: index for ultrasonic sensor.
     :param timeout: Max usecs to wait for the echo signal return. default 50ms.
-    :returns: cm distance or an error value.
+    :returns: cm distance or error string.
     """
     trigger[i].low()
     utime.sleep_us(2)
@@ -571,22 +616,19 @@ def ultrasonic_distance_pwm(i, timeout=50000):
     start = utime.ticks_us()
     while echo[i].value() == 0:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
-            print(f"Error: Sensor {i} - too close or malfunction.")
-            return 0.0  # Return max distance or an error
-
+            return 0.0, f"ULTRASONIC_ERROR: Sensor {i} - too close or malfunction."
     signal_off = utime.ticks_us()
 
     # Wait for echo to go low, with timeout
     start = utime.ticks_us()
     while echo[i].value() == 1:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
-            print(f"Error: Sensor {i} - no signal returned, too far.")
-            return 300.0  # Return max distance
-
+            return 300.0, f"ULTRASONIC_ERROR: Sensor {i} - no signal returned, too far."
     signal_on = utime.ticks_us()
 
     # Calculate cm distance
-    return utime.ticks_diff(signal_on, signal_off) * (speed_sound / 20000.0)
+    distance_in_cm =utime.ticks_diff(signal_on, signal_off) * (speed_of_sound / 20000.0)
+    return distance_in_cm, None
 
 def display_environment(dist):
     """
@@ -666,7 +708,7 @@ def blit_white_only(source_fb, w, h, x, y):
             if pixel == 1:  # Only copy white pixels
                 oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
                 
-def display_car ():
+def display_car (celcius, farenheit):
     """
     display_car & temp, Need oled.fill(0) before call & oled.show() after call
     """    
@@ -676,14 +718,15 @@ def display_car ():
         
         if metric:
             oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, 0)
-            if not dht_error:
-                oled.text(f"{temp_c:.0f}", 108, 2)
+            if celcius:
+                oled.text(f"{celcius:.0f}", 108, 2)
             else:
                 oled.text("xx", 108, 2)
+
         else:
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, 0)
-            if not dht_error:
-                oled.text(f"{temp_f:.0f}", 108, 2)
+            if farenheit:
+                oled.text(f"{farenheit:.0f}", 108, 2)
             else:
                 oled.text("xx", 108, 2)
     else:
@@ -692,14 +735,14 @@ def display_car ():
         
         if metric:
             oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
-            if not dht_error:
-                oled.text(f"{temp_c:.0f}", 108, DISP_HEIGHT-8)
+            if celcius:
+                oled.text(f"{celcius:.0f}", 108, DISP_HEIGHT-8)
             else:
                 oled.text("xx", 108, DISP_HEIGHT-8)
         else:
             oled.blit(FrameBuffer(bitmap_unit_in,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
-            if not dht_error:
-                oled.text(f"{temp_f:.0f}", 108, DISP_HEIGHT-8)
+            if farenheit:
+                oled.text(f"{farenheit:.0f}", 108, DISP_HEIGHT-8)
             else:
                 oled.text("xx", 108, DISP_HEIGHT-8)
     return
@@ -708,14 +751,14 @@ def display_tiles_dist():
     """
     display_car & temp, Need oled.show() after call
     """
-    if not working_sensors:
+    if not working_ultrasonics:
         oled.text(" No Ultrasonic",  5, 30)
         oled.text("Sensors Working", 5, 40)
         return
 
     if rear:
         #Middle
-        if 1 in working_sensors:
+        if 1 in working_ultrasonics:
             # Display bitmap for sensor 1, since no pixels overlap we can use blit directly
             if sensor[1].cm > dist_step_01:
                 oled.blit(FrameBuffer(bitmap_sensor_1a_on, 32, 9, MONO_HLSB), 48, 23)
@@ -735,7 +778,7 @@ def display_tiles_dist():
                 oled.blit(FrameBuffer(bitmap_sensor_1d_off, 40, 10, MONO_HLSB), 42, 52)
 
         # left sensor
-        if 0 in working_sensors:
+        if 0 in working_ultrasonics:
             # Display bitmap for sensor 0
             if sensor[0].cm > dist_step_01:
                 bmp_1a = FrameBuffer(bitmap_sensor_0a_on, 32, 14, MONO_HLSB)  #, 24, 17)
@@ -759,7 +802,7 @@ def display_tiles_dist():
             blit_white_only(bmp_1d, 32, 18, 16, 43)
 
         # right sensor
-        if 2 in working_sensors:
+        if 2 in working_ultrasonics:
             # Display bitmap for sensor 2
             if sensor[2].cm > dist_step_01:
                 bmp_3a = FrameBuffer(bitmap_sensor_2a_on, 32, 14, MONO_HLSB)  #, 72, 17)
@@ -785,7 +828,7 @@ def display_tiles_dist():
     # This is for flipped displays
     else:
         # middle sensor
-        if 1 in working_sensors:
+        if 1 in working_ultrasonics:
             # Display bitmap for sensor 1, since not pixels overlap, we can blit directly
             if sensor[1].cm > dist_step_01:
                 oled.blit(FrameBuffer(flipped_bitmap_sensor_1a_on, 32, 9, MONO_HLSB), 48, DISP_HEIGHT-23-9)
@@ -805,7 +848,7 @@ def display_tiles_dist():
                 oled.blit(FrameBuffer(flipped_bitmap_sensor_1d_off, 40, 10, MONO_HLSB), 42, DISP_HEIGHT-52-10)
      
         # left sensor
-        if 0 in working_sensors:
+        if 0 in working_ultrasonics:
             # Display bitmap for sensor 0
             if sensor[2].cm > dist_step_01:
                 bmp_1a = FrameBuffer(flipped_bitmap_sensor_0a_on, 32, 14, MONO_HLSB)
@@ -829,7 +872,7 @@ def display_tiles_dist():
             blit_white_only(bmp_1d, 32, 18, 80, DISP_HEIGHT-43-18)
 
         # right sensor
-        if 2 in working_sensors:
+        if 2 in working_ultrasonics:
             # Display bitmap for sensor 2
             if sensor[0].cm > dist_step_01:
                 bmp_3a = FrameBuffer(flipped_bitmap_sensor_2a_on, 32, 14, MONO_HLSB)
@@ -853,7 +896,7 @@ def display_tiles_dist():
             blit_white_only(bmp_3d, 32, 18, 16, DISP_HEIGHT-43-18)
 
     #round to nearest
-    for i in working_sensors:
+    for i in working_ultrasonics:
         if metric:
             int_string = str(int(sensor[i].cm + 0.5))
         else:
@@ -893,38 +936,36 @@ print('Found DS devices: ', roms)
 initialize_flipped_bitmaps()
 
 # at start display artcar image at top of oled
-temp_c = 20.56
-temp_f = 69.0
-humidity = 70.0
+temp_f = None
+temp_c = None
+humidity = None
 speed_sound = SPEED_SOUND_20C_70H
 oled.fill(0)
-display_car()
+display_car(None, None)
 oled.show()
 zzz(3)
 
 # check status of DHT sensor
-try:
-    dht_sensor.measure()
-    temp_c = dht_sensor.temperature()
-    temp_f = (temp_c * 9.0 / 5.0) + 32.0
-    humidity = dht_sensor.humidity()
-except Exception as e:
+temp_c, humidity, error = dht_temp_humidity()
+if error:
     oled.text("Error DHT22", 0, 24)
-    oled.text(str(e), 0, 36)
+    oled.text(str(error), 0, 36)
     oled.show()
-    dht_error = True
+    temp_c = None
+    humidity = None
+else:
+    temp_f = (temp_c * 9.0 / 5.0) + 32.0
 
-working_sensors = []
-nonworking_sensors = []
+working_ultrasonics = []
+nonworking_ultrasonics = []
 for i in range(NUMBER_OF_SENSORS):
-    distance = ultrasonic_distance_pwm(i, timeout=50000)
-    if 0.0 < distance < 300.0:
-        working_sensors.append(i)
+    distance, error = ultrasonic_distance_pwm(i, speed_sound, timeout=50000)
+    if error:
+        nonworking_ultrasonics.append(i)
     else:
-        nonworking_sensors.append(i)
-
-print(f"Working Ultrasonic sensors: {working_sensors}")
-print(f"Non-working Ultrasonic sensors: {nonworking_sensors}")
+        working_ultrasonics.append(i)
+print(f"Working Ultrasonic sensors: {working_ultrasonics}")
+print(f"Non-working Ultrasonic sensors: {nonworking_ultrasonics}")
 
 # main loop
 loop_time = time.ticks_ms()
@@ -951,23 +992,37 @@ while True:
     # ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
     if elapsed_time > 3000:
         loop_time = time.ticks_ms()
-        calc_speed_sound_from_dht()
         
         # Outside temp from waterproof ds sensor, ourside temps not used yet in this code
-        outside_temp_c, outside_temp_f = outside_temp_ds()
-        if debug: print (f"dht temp C = {temp_c:.2f}  Outside temp C = {outside_temp_c:.2f}")
+        outside_temp_c, error = outside_temp_ds()
+        if error:
+            print(f"No Outside Temp: {error}")
+        else:
+            if debug: print (f"dht temp C = {temp_c:.2f}  Outside temp C = {outside_temp_c:.2f}")
+        
+        # Inside Temp & humidity dht sensor
+        # temp_c, humidity, error = dht_temp_humidity()
+        
+        # if no outside temp use inside temp
+        # if no inside temp/humidity use 70%
+        # if no temps use default speed of sound
+        calc_speed_sound_from_dht()
+        # calc_speed_sound(celcius, percent_humidity)
     
     #get distance from ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
     # sensors: left front/rear = 0, middle=1  right front/rear =2
-    for i in working_sensors:
-        sensor[i].cm = ultrasonic_distance_pwm(i, timeout=30000)
-        sensor[i].inch = sensor[i].cm/2.54
+    for i in working_ultrasonics:
+        sensor[i].cm, error = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
+        if error:
+            print(error)
+        else:
+            sensor[i].inch = sensor[i].cm/2.54
     
     if show_env:
-        display_environment(sensor[working_sensors[0]].cm if working_sensors else -1.0)
+        display_environment(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0)
     else:
         oled.fill(0)
-        display_car()
+        display_car(temp_c, temp_f)
         display_tiles_dist()
         oled.show()
 
