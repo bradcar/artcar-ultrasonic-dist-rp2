@@ -31,6 +31,9 @@
 from machine import Pin
 import machine
 import dht
+import onewire
+import ds18x20
+
 import time
 import utime
 from math import sqrt
@@ -113,8 +116,10 @@ for i in range(NUMBER_OF_SENSORS):
     trigger.append(trigger_pin)
     echo.append(echo_pin)
 led = Pin(25, Pin.OUT)
+ds_pin = machine.Pin(28)
 
 dht_sensor = dht.DHT22(dht_pin)
+ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
 oled_spi = machine.SPI(1)
 oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
 print("oled_spi:", oled_spi)
@@ -459,7 +464,6 @@ def calc_speed_sound_from_dht():
     
     try:
         dht_sensor.measure()
-        dht_error = False
         temp_c = dht_sensor.temperature()
         temp_f = (temp_c * 9.0 / 5.0) + 32.0
         humidity = dht_sensor.humidity()
@@ -480,6 +484,8 @@ def calc_speed_sound_from_dht():
             print(f"Speed Sound: {speed_sound:.1f} m/s\n")
     except Exception as e:
         print("Error reading DHT22:", str(e))
+        dht_error = True
+
     return
 
 def ultrasonic_distance_uart(i):
