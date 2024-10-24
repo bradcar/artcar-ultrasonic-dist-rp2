@@ -36,8 +36,7 @@ def ultrasonic_distance_uart():
     """
     :returns: distance in cm (float), The sensor returns mm in integer
     """
-    # REQUIRED write !!!! to get uart1 to send data
-
+    # REQUIRED write !!!! to get uart1 to send data, two writes then delay not needed
     uart1.write(b'\xff')
     uart1.write(b'\xff')
 #    time.sleep_ms(100)  # Small delay to ensure complete data packet reception
@@ -73,7 +72,7 @@ print(implementation[0], uname()[3],
 print("====================================")
 
 # A02YYUW seems to need 1 call in setup before use, else get errors the first time
-cm = ultrasonic_distance_uart()
+_ = ultrasonic_distance_uart()
 
 # Main loop
 while True:
