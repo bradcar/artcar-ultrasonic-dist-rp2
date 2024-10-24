@@ -25,7 +25,7 @@
 # https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
 #
 # TODOs
-#  * try a02yyuw waterproof UART sensor, test code in /sensor-tests
+#  * expand from one a02yyuw waterproof UART sensor to 3
 #  * add button #3 for switching between showing car on oled or
 
 from machine import Pin, UART
@@ -542,6 +542,7 @@ def ultrasonic_distance_uart():
 
     A02YYUW: 3.3v to 5v, +/- 0.2cm,  3cm to 450cm, $16, only outputs UART serial data, RS485 output, 8mA
      - outputs serial data UART
+     - Sensor wires (Red=Vcc, Blk=Gnd, Yellow=tx1=GP20, White=rx1=GP21)
      - RX pin controls the data output.
        - HIGH or not connected (internal pulled up) then results every 300ms.
        - RX pin held LOW then results every 100ms. (less accurate)
