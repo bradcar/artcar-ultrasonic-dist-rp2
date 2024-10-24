@@ -459,106 +459,67 @@ def get_str_width(text):
 def outside_temp_ds():
     """
     calc to update speed of sound based on temp & humidity from the DHT22 sensor
-    """
-    global ds_error
     
+    :returns: temp celsius & error string
+    """
+    celsius = False
     try:
         ds_sensor.convert_temp()
-    except onewire.OneWireError as error:
-        try:
-            print("DS temp onewire: " + str(error) + '\n')
-            ds_error = True
-            return None, "ERROR_DS_TEMP_ONEWIRE:"+ str(error)
-        except OSError:
-            pass
-    
+    except onewire.OneWireError as e:
+        print("DS temp onewire: " + str(e) + '\n')
+        return None, "ERROR_DS_TEMP_ONEWIRE:"+ str(e)
+
     # must sleep 750ms before read 1st value
     zzz(.75)
-  
     for rom in roms:
-        celcius = ds_sensor.read_temp(rom)
-        if debug: print(f"rom={rom}\n  tempC={celcius:.2f}")
-    return celcius, None
-
+        celsius = ds_sensor.read_temp(rom)
+        if debug: print(f"rom={rom}\n  tempC={celsius:.2f}")
+    return celsius, None
    
-def calc_speed_sound(celcius, percent_humidity):
+def calc_speed_sound(celsius, percent_humidity):
     """
     calc to update speed of sound based on temp & humidity from the DHT22 sensor
     
-    :param temp: temp in celcius
-    :param humdity: % humidity
+    :param celsius: temp in celsius
+    :param percent_humidity: % humidity
     :returns: speed meter/sec, error string
     """
-    if celcius != None or percent_humidity != None:
+    if celsius > 0 and percent_humidity >0:
         # Speed sound with temp correction: (20.05 * sqrt(273.16 + temp_c))
         # online temp/humid calc: http://resource.npl.co.uk/acoustics/techguides/speedair/
         # created spreadsheet of diffs between online temp/humid and temp formula
         # did a 2d linear fit to create my own correction, error is now +/-0.07%
         # valid for 0C to 30C temp & 75 to 102 kPa pressure
-        meter_per_sec = (20.05 * sqrt(273.16 + celcius)) \
-                      + (0.0006545 * percent_humidity + 0.00475) * temp \
+        meter_per_sec = (20.05 * sqrt(273.16 + celsius)) \
+                      + (0.0006545 * percent_humidity + 0.00475) * celsius \
                       + (0.001057 * percent_humidity + 0.07121)
         return meter_per_sec, None
     else:
-        return None, f"ERROR_INVALID_SOUND_SPEED:temp={temp},humidity={percent_humidity}"
+        return None, f"ERROR_INVALID_SOUND_SPEED:temp={celsius},humidity={percent_humidity}"
     
 def dht_temp_humidity():
     """
     read temp & humidity from the DHT22 sensor
     
-    :param temp: temp in celcius
-    :param humdity: % humidity
-    :returns: celcius, percent_humidity, error string
+    :returns: celsius, percent_humidity, error string
     """
     
     try:
         dht_sensor.measure()
-        celcius = dht_sensor.temperature()
+        celsius = dht_sensor.temperature()
         percent_humidity = dht_sensor.humidity()
         if debug:
             print(f"DHT Temp °C : {temp_c:.2f}")
             print(f"DHT Temp °F : {temp_f:.2f}")
             print(f"DHT Humidity: {humidity:.2f}%")
-    except Exception as error:
-        return None, None, "ERROR_TEMP_HUMID:"+str(error)
-
-    return celcius, percent_humidity, None
-    
-def calc_speed_sound_from_dht():
-    """
-    calc to update speed of sound based on temp & humidity from the DHT22 sensor
-    """
-    global dht_error, speed_sound, temp_c, temp_f, humidity
-    
-    try:
-        dht_sensor.measure()
-        temp_c = dht_sensor.temperature()
-        temp_f = (temp_c * 9.0 / 5.0) + 32.0
-        humidity = dht_sensor.humidity()
-        
-        # Speed sound with temp correction: (20.05 * sqrt(273.16 + temp_c))
-        # online temp/humid calc: http://resource.npl.co.uk/acoustics/techguides/speedair/
-        # created spreadsheet of diffs between online temp/humid and temp formula
-        # did a 2d linear fit to create my own correction, error is now +/-0.07%
-        # valid for 0C to 30C temp & 75 to 102 kPa pressure
-        speed_sound = (20.05 * sqrt(273.16 + temp_c)) \
-                      + (0.0006545 * humidity + 0.00475) * temp_c \
-                      + (0.001057 * humidity + 0.07121)
-
-        if debug:
-            #print(f"Temp °C : {temp_c:.2f}")
-            print(f"Temp °F : {temp_f:.2f}")
-            print(f"Humidity: {humidity:.2f}%")
-            print(f"Speed Sound: {speed_sound:.1f} m/s\n")
     except Exception as e:
-        print("Error reading DHT22:", str(e))
-        dht_error = True
+        return None, None, "ERROR_TEMP_HUMID:"+str(e)
 
-    return
+    return celsius, percent_humidity, None
 
 def ultrasonic_distance_uart(i):
     """
-    Recieve ultrasonic distance results on UART, automatic temp correction in A02YYUW sensor
+    Receive ultrasonic distance results on UART, automatic temp correction in A02YYUW sensor
     
     The four bytes of data sent by the sensor:
     Byte 0 – Header – always a value of xFF, start of a block of data.
@@ -585,7 +546,7 @@ def ultrasonic_distance_uart(i):
     * PH2.0-4P Connector x1 used by A02YYUW
     
     :param i: index for ultrasonic sensor.
-    :returns: cm distance or an error value.
+    :returns: cm distance and error string.
     """
     # https://forum.makerforums.info/t/a02yyuw-waterproof-ultrasonic-sensor/87359/18
     print(f"ultrasonic_distance_uart #{i} - NO code IMPLEMENTED")
@@ -626,7 +587,7 @@ def ultrasonic_distance_pwm(i, speed_of_sound, timeout=50000):
     signal_on = utime.ticks_us()
 
     # Calculate cm distance
-    distance_in_cm =utime.ticks_diff(signal_on, signal_off) * (speed_of_sound / 20000.0)
+    distance_in_cm = utime.ticks_diff(signal_on, signal_off) * (speed_of_sound / 20000.0)
     return distance_in_cm, None
 
 def display_environment(dist):
@@ -634,34 +595,32 @@ def display_environment(dist):
     display just environment readings & car image(for fun)
     No need to oled.fill(0) before or oled.show() after call
     
-    TODO: update error handling
-
     param:dist:  distance if dist = -1.0 then display error
     """    
     oled.fill(0)
-    if not dht_error:
-        oled.fill(0)
+    if temp_c:
         if metric:
             oled.text(f"Temp = {temp_c:.1f}C", 0, 0)
         else:
             oled.text(f"Temp = {temp_f:.1f}F", 0, 0)
-        oled.text(f"Humid= {humidity:.1f}%", 0, 12)
-        if metric:
-            oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
-            if dist:
-                oled.text(f"Dist= {dist:.0f}cm", 0, 55)
-            else:
-                oled.text(f"No ultrasonic", 0, 55)
-        else:
-            oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
-            if dist:
-                oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
-            else:
-                oled.text(f"No ultrasonic", 0, 55)
+        if humidity: oled.text(f"Humid= {humidity:.1f}%", 0, 12)
     else:
         oled.text(f"No Temp/Humidity", 0, 10)
-        oled.text(f" Sensor Working",  0, 20) 
+        oled.text(f" Sensor Working",  0, 20)
         
+    if metric:
+        oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
+        if dist:
+            oled.text(f"Dist= {dist:.0f}cm", 0, 55)
+        else:
+            oled.text(f"No ultrasonic", 0, 55)
+    else:
+        oled.text(f"Sound={speed_sound*3.28084:.0f}ft/s", 0, 24)
+        if dist:
+            oled.text(f"Dist= {dist/2.54:.1f}in", 0, 55)
+        else:
+            oled.text(f"No ultrasonic", 0, 55)
+
     oled.blit(FrameBuffer(bitmap_artcar_image_back,56,15, MONO_HLSB),22,36)
     oled.show()
     return
@@ -709,11 +668,11 @@ def blit_white_only(source_fb, w, h, x, y):
             if pixel == 1:  # Only copy white pixels
                 oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
                 
-def display_car (celcius, farenheit):
+def display_car (celsius, farenheit):
     """
     display_car & temp, Need oled.fill(0) before call & oled.show() after call
     
-    :param celcius: temp in C to display
+    :param celsius: temp in C to display
     :param farenheit: temp in F to display
     """    
     if rear:
@@ -722,8 +681,8 @@ def display_car (celcius, farenheit):
         
         if metric:
             oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, 0)
-            if celcius:
-                oled.text(f"{celcius:.0f}", 108, 2)
+            if celsius:
+                oled.text(f"{celsius:.0f}", 108, 2)
             else:
                 oled.text("xx", 108, 2)
 
@@ -739,8 +698,8 @@ def display_car (celcius, farenheit):
         
         if metric:
             oled.blit(FrameBuffer(bitmap_unit_cm,24,10, MONO_HLSB), 0, DISP_HEIGHT-10)
-            if celcius:
-                oled.text(f"{celcius:.0f}", 108, DISP_HEIGHT-8)
+            if celsius:
+                oled.text(f"{celsius:.0f}", 108, DISP_HEIGHT-8)
             else:
                 oled.text("xx", 108, DISP_HEIGHT-8)
         else:
@@ -970,6 +929,7 @@ print(f"Working Ultrasonic sensors: {working_ultrasonics}")
 print(f"Non-working Ultrasonic sensors: {nonworking_ultrasonics}")
 
 # main loop
+first_run = True
 loop_time = time.ticks_ms()
 while True:
     elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
@@ -992,7 +952,7 @@ while True:
     # speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
     # speed of sound at 30C goes with a humidity of 0% to 90% goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
     # ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
-    if elapsed_time > 3000:
+    if first_run or elapsed_time > 3000:
         loop_time = time.ticks_ms()
         
         # Outside temp from waterproof ds sensor, ourside temps not used yet in this code
@@ -1000,18 +960,42 @@ while True:
         if error:
             print(f"No Outside Temp: {error}")
         else:
-            if debug: print (f"dht temp C = {temp_c:.2f}  Outside temp C = {outside_temp_c:.2f}")
+            if debug: print (f"Outside temp C = {outside_temp_c:.2f}")
         
         # Inside Temp & humidity dht sensor
-        # temp_c, humidity, error = dht_temp_humidity()
+        inside_temp_c, humidity, error = dht_temp_humidity()
+        if error:
+            print(f"No Inside Temp: {error}")
+        else:
+            if debug: print (f"Inside temp C = {inside_temp_c:.2f}")
         
         # if no outside temp use inside temp
         # if no inside temp/humidity use 70%
         # if no temps use default speed of sound
-        calc_speed_sound_from_dht()
-        # calc_speed_sound(celcius, percent_humidity)
+        if outside_temp_c and inside_temp_c:
+            temp_c = outside_temp_c
+            speed_sound, _ = calc_speed_sound(temp_c, humidity)
+        elif outside_temp_c:
+            temp_c = outside_temp_c
+            speed_sound, _ = calc_speed_sound(temp_c, 70.0)
+            humidity = None
+        elif inside_temp_c:
+            temp_c = inside_temp_c
+            speed_sound, _ = calc_speed_sound(temp_c, humidity)
+        else: 
+            speed_sound = SPEED_SOUND_20C_70H
+        if temp_c:
+            temp_f = (temp_c * 9.0 / 5.0) + 32.0
+        first_run = False
+            
+        if debug: print (f"outside={outside_temp_c:.3f}, inside={inside_temp_c:.3f}")
+        if debug: print (f"humidity={humidity:.1f}, speed_sound={speed_sound:.1f}")
+        if debug: print (f"temp_c={temp_c:.3f}\n")
+
+        #calc_speed_sound_from_dht()
+        # calc_speed_sound(celsius, percent_humidity)
     
-    #get distance from ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
+    # get distance from pwm ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
     # sensors: left front/rear = 0, middle=1  right front/rear =2
     for i in working_ultrasonics:
         sensor[i].cm, error = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
