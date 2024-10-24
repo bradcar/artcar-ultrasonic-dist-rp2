@@ -509,7 +509,6 @@ def dht_temp_humidity():
     
     :returns: celsius, percent_humidity, error string
     """
-    
     try:
         dht_sensor.measure()
         celsius = dht_sensor.temperature()
@@ -551,7 +550,6 @@ def ultrasonic_distance_uart():
      - Mode 0(default): must measure, use ultrasonic_distance_pwm() code instead
      - Mode 1: outputs serial data UART, measurement every 200ms. You read the data on the Echo pin
      - Mode 2: you send #55, then it outputs serial data UART, You read the data on the Echo pin
-     - likely doesn't have temp correction
     https://dronebotworkshop.com/waterproof-ultrasonic/
     https://www.amazon.com/Ultrasonic-Distance-Controlled-Detector-Waterproof/dp/B0CFFTS71Y/
     
@@ -586,17 +584,19 @@ def ultrasonic_distance_uart():
                 # Calculate distance in mm from the data bytes
                 distance = (data_buffer[1] << 8) + data_buffer[2]
                 if debug: print(f"distance={distance} mm\n")
-                return distance/10.0
-    return None
+                return distance/10.0, None
+
+    # if get here, then error state
+    return None, f"ULTRASONIC_ERROR: UART Sensor- no results"
 
     
 def ultrasonic_distance_pwm(i, speed_of_sound, timeout=50000):
     """
     Get ultrasonic distance from a sensor where ping and measure with a timeout.
     
-    HC-SR04: most Send a 10uS high to trigger
+    HC-SR04: most Send a 10uS high to trigger (default mode 1)
     JSN-SR04T: Send a 20uS high to trigger, instead of 10
-    A02YYUW: only outputs UART serial data, instead use ultrasonic_distance_uart(i) 
+    A02YYUW: only outputs UART serial data, must use ultrasonic_distance_uart(i) 
     https://dronebotworkshop.com/waterproof-ultrasonic/
     
     :param i: index for ultrasonic sensor.
@@ -935,7 +935,10 @@ print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
 roms = ds_sensor.scan()
 print('Found DS devices: ', roms)
 
-_ = ultrasonic_distance_uart()
+_, _ = ultrasonic_distance_uart()
+zzz(.5)
+_, error = ultrasonic_distance_uart()
+if not error: print ("UART ultrasonic [1] found")
 
 initialize_flipped_bitmaps()
 
@@ -966,8 +969,8 @@ for i in range(NUMBER_OF_SENSORS):
         nonworking_ultrasonics.append(i)
     else:
         working_ultrasonics.append(i)
-print(f"Working Ultrasonic sensors: {working_ultrasonics}")
-print(f"Non-working Ultrasonic sensors: {nonworking_ultrasonics}")
+print(f"Working PWM Ultrasonic sensors: {working_ultrasonics}")
+print(f"Non-working PWM Ultrasonic sensors: {nonworking_ultrasonics}")
 
 # main loop
 first_run = True
@@ -1051,11 +1054,14 @@ while True:
         else:
             sensor[i].inch = sensor[i].cm/2.54
             
-    ######### Faking IT ##########
+    ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
     # we know pwm sensor is i=1 so just overwrite with uart sensor
-    sensor[1].cm = ultrasonic_distance_uart()
-    sensor[1].inch = sensor[i].cm/2.54
-    ######### Faking IT ##########
+    sensor[1].cm, error = ultrasonic_distance_uart()
+    if error:
+            print(error)
+    else:
+            sensor[1].inch = sensor[i].cm/2.54
+    ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
     
     if show_env:
         #pick first working ultrasonic to show
