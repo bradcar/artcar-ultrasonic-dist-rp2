@@ -37,13 +37,12 @@ def ultrasonic_distance_uart():
     :returns: distance in cm (float), The sensor returns mm in integer
     """
     # REQUIRED write !!!! to get uart1 to send data
-    uart1.write(b'\xff')
-    time.sleep_ms(100)  # Small delay to ensure complete data packet reception
-    
-    if uart1.any():
-        
-        if debug: print("uart1: reading bytes")
 
+    uart1.write(b'\xff')
+    uart1.write(b'\xff')
+#    time.sleep_ms(100)  # Small delay to ensure complete data packet reception
+    
+    if uart1.any():   
         # Read the first byte to check for the packet header (0xFF)
         if uart1.read(1) == b'\xff':
             # Create an array to store the data buffer

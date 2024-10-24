@@ -28,7 +28,7 @@
 #  * try a02yyuw waterproof UART sensor, test code in /sensor-tests
 #  * add button #3 for switching between showing car on oled or
 
-from machine import Pin
+from machine import Pin, UART
 import machine
 import dht
 import onewire
@@ -120,6 +120,7 @@ for i in range(NUMBER_OF_SENSORS):
     trigger.append(trigger_pin)
     echo.append(echo_pin)
 led = Pin(25, Pin.OUT)
+uart1 = machine.UART(1, 9600, tx=20, rx=21)
 ds_pin = machine.Pin(28)
 
 dht_sensor = dht.DHT22(dht_pin)
@@ -522,9 +523,17 @@ def dht_temp_humidity():
 
     return celsius, percent_humidity, None
 
-def ultrasonic_distance_uart(i):
+def calculate_checksum(data_buffer):
+    """
+    Function to calculate checksum, make sure only 1 byte returned
+    """
+    return (data_buffer[0] + data_buffer[1] + data_buffer[2]) & 0x00ff
+
+def ultrasonic_distance_uart():
     """
     Receive ultrasonic distance results on UART, automatic temp correction in A02YYUW sensor
+    
+    :returns: distance in cm (float), The sensor returns mm in integer
     
     The four bytes of data sent by the sensor:
     Byte 0 – Header – always a value of xFF, start of a block of data.
@@ -550,12 +559,36 @@ def ultrasonic_distance_uart(i):
     * need RS-485 twisted pair Data Serial Bulk Cable: 24 AWG
     * PH2.0-4P Connector x1 used by A02YYUW
     
-    :param i: index for ultrasonic sensor.
-    :returns: cm distance and error string.
+    :returns: cm distance and ...
     """
-    # https://forum.makerforums.info/t/a02yyuw-waterproof-ultrasonic-sensor/87359/18
-    print(f"ultrasonic_distance_uart #{i} - NO code IMPLEMENTED")
-    return
+# REQUIRED write !!!! to get uart1 to send data, two writes then delay not needed
+    uart1.write(b'\xff')
+    uart1.write(b'\xff')
+#    time.sleep_ms(100)  # Small delay to ensure complete data packet reception
+    
+    if uart1.any():   
+        # Read the first byte to check for the packet header (0xFF)
+        if uart1.read(1) == b'\xff':
+            # Create an array to store the data buffer
+            data_buffer = bytearray(4)
+            data_buffer[0] = 0xff
+
+            # Read the next 3 bytes
+            data_buffer[1:4] = uart1.read(3)
+            if debug: print(f"data_buffer = {data_buffer}")
+
+            # Compute checksum
+            checksum = calculate_checksum(data_buffer)
+            if debug: print(f"checksum={checksum:x}")
+
+            # Verify if the checksum matches the last byte in the packet
+            if data_buffer[3] == checksum:
+                # Calculate distance in mm from the data bytes
+                distance = (data_buffer[1] << 8) + data_buffer[2]
+                if debug: print(f"distance={distance} mm\n")
+                return distance/10.0
+    return None
+
     
 def ultrasonic_distance_pwm(i, speed_of_sound, timeout=50000):
     """
@@ -894,12 +927,15 @@ print("Starting...")
 print("====================================")
 print(implementation[0], uname()[3],
       "\nrun on", uname()[4])
+print(uart1)
 print("====================================")
 print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
 
 # roms will be a list of sensors on same GPIO pin
 roms = ds_sensor.scan()
 print('Found DS devices: ', roms)
+
+_ = ultrasonic_distance_uart()
 
 initialize_flipped_bitmaps()
 
@@ -938,7 +974,8 @@ first_run = True
 loop_time = time.ticks_ms()
 while True:
     
-    # pico data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree 
+    # pico data pico 2 rp2350 data sheet p1068
+    # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree 
     if debug: temp_chip = 27 - ((on_pico_temp.read_u16() * on_pico_conversion)- 0.706) / 0.001721
     if debug: print(f"on chip temp = {temp_chip:.3f}C")
     
@@ -1013,6 +1050,12 @@ while True:
             print(error)
         else:
             sensor[i].inch = sensor[i].cm/2.54
+            
+    ######### Faking IT ##########
+    # we know pwm sensor is i=1 so just overwrite with uart sensor
+    sensor[1].cm = ultrasonic_distance_uart()
+    sensor[1].inch = sensor[i].cm/2.54
+    ######### Faking IT ##########
     
     if show_env:
         #pick first working ultrasonic to show
