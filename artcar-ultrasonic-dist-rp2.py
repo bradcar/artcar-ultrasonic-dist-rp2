@@ -82,6 +82,11 @@ debounce_1_time=0
 debounce_2_time=0
 
 # === PINS ===
+#internal pins
+on_pico_temp = machine.ADC(4)
+on_pico_conversion = 3.3 /65536  # 3.3v /2^16
+
+#external pins
 dht_pin = machine.Pin(2)
 button_1 = Pin(5, Pin.IN, Pin.PULL_UP)  #interrupt cm/in button pins
 button_2 = Pin(6, Pin.IN, Pin.PULL_UP)  #interrupt rear/front button pins
@@ -932,6 +937,11 @@ print(f"Non-working Ultrasonic sensors: {nonworking_ultrasonics}")
 first_run = True
 loop_time = time.ticks_ms()
 while True:
+    
+    # pico data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree 
+    if debug: temp_chip = 27 - ((on_pico_temp.read_u16() * on_pico_conversion)- 0.706) / 0.001721
+    if debug: print(f"on chip temp = {temp_chip:.3f}C")
+    
     elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
     if debug: print(f"Loop time duration ={elapsed_time}")
     
