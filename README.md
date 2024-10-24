@@ -10,6 +10,7 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * DHT22 - for temp & humidity
 * DS18B20 - waterproof outdoor temp that uses onewire protocol
 * HC-SR04 or JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances)
+* Temperature from on-RP2350 (no external pins, machine.ADC(4), no sensor needed
 * TODO A02YYUW: 1x to 3x Ultrasonic sensors are polled for distances (UART - read distances from device)
 
 ## Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
