@@ -28,7 +28,7 @@
 #  * expand from one a02yyuw waterproof UART sensor to 3
 #  * add button #3 for switching between showing car on oled or
 
-from machine import Pin, UART
+from machine import Pin, UART, ADC
 import machine
 import dht
 import onewire
@@ -50,6 +50,7 @@ from framebuf import FrameBuffer, MONO_HLSB
 # Constants and setup
 DISP_WIDTH=128
 DISP_HEIGHT=64
+OVER_TEMP_WARNING = 70.0
 # Define the number of sensors, more than 3 will need redesign
 NUMBER_OF_SENSORS = 3
 
@@ -84,7 +85,6 @@ debounce_2_time=0
 # === PINS ===
 #internal pins
 on_pico_temp = machine.ADC(4)
-on_pico_conversion = 3.3 /65536  # 3.3v /2^16
 
 #external pins
 dht_pin = machine.Pin(2)
@@ -922,6 +922,16 @@ def display_tiles_dist():
             oled.text(int_string, xpos, DISP_HEIGHT-ypos-8)
     return
 
+def onboard_temperature():
+    """
+    # pico data pico 2 rp2350 data sheet page 1068
+    # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree 
+    """
+    adc_value = on_pico_temp.read_u16()
+    volt = (3.3/65535) * adc_value
+    celsius = 27 - (volt - 0.706)/0.001721
+    if debug: print(f"on chip temp = {temp_chip:.3f}C")
+    return celsius
 
 # startup code
 print("Starting...")
@@ -929,6 +939,8 @@ print("====================================")
 print(implementation[0], uname()[3],
       "\nrun on", uname()[4])
 print(uart1)
+temp = onboard_temperature()
+print(f"onboard Pico 2 temp = {temp:.1f}C")
 print("====================================")
 print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
 
@@ -977,12 +989,6 @@ print(f"Non-working PWM Ultrasonic sensors: {nonworking_ultrasonics}")
 first_run = True
 loop_time = time.ticks_ms()
 while True:
-    
-    # pico data pico 2 rp2350 data sheet p1068
-    # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree 
-    if debug: temp_chip = 27 - ((on_pico_temp.read_u16() * on_pico_conversion)- 0.706) / 0.001721
-    if debug: print(f"on chip temp = {temp_chip:.3f}C")
-    
     elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
     if debug: print(f"Loop time duration ={elapsed_time}")
     
@@ -1005,6 +1011,10 @@ while True:
     # ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
     if first_run or elapsed_time > 3000:
         loop_time = time.ticks_ms()
+        
+        #check for overtemp onboard pico
+        temp = onboard_temperature()
+        if temp > OVER_TEMP_WARNING: print(f"WARNING: onboard Pico 2 temp = {temp:.1f}C")
         
         # Outside temp from waterproof ds sensor, ourside temps not used yet in this code
         outside_temp_c, error = outside_temp_ds()
