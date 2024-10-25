@@ -12,9 +12,9 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * HC-SR04 or JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances)
 * Temperature from on-RP2350 (no external pins, machine.ADC(4), no sensor needed
 * A02YYUW: 1x Ultrasonic UART sensors (TODO: Integrate into art car project, currently in the "sensor-tests" directory)
-  * in order to get 3 UART ultrsonics sensor on one Pico,
-    * likely need this: https://www.amazon.com/JESSINIE-SC16IS752-Adapter-Conversion-Communication/dp/B0BBLV98ZP/
-    * https://github.com/rickkas7/SC16IS7xxRK
+  * in order to get 3 UART ultrasonic sensors on one Pico,
+    * HW for dual-UART-to-SDI: https://www.amazon.com/JESSINIE-SC16IS752-Adapter-Conversion-Communication/dp/B0BBLV98ZP/
+    * SW for UART-to-SDI: https://github.com/rickkas7/SC16IS7xxRK
  
 ## Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
 * UPIR youtube channel: https://www.youtube.com/upir_upir
