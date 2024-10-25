@@ -15,12 +15,13 @@ import time
 #                   4) White =tx_sensor=pico_rx1(GP21)
 #
 # * https://dronebotworkshop.com/waterproof-ultrasonic/  (note diff wire colors on sensor)
-#   Sensor RX pin controls mode. When held HIGH or not connected (it is internally pulled up),
+#   Sensor's RX pin controls mode. When held HIGH or not connected (it is internally pulled up),
 #   it will operate every 300ms. If the RX pin is held LOW then the data is output every 100ms.
 #   Pico's UART RX pin to receive the signal/values from the senor's TX pin
 #
 #   BUT, only way it works for me is to write a byte each time to get sensor to respond
-# https://docs.micropython.org/en/latest/library/machine.UART.html
+#
+#   https://docs.micropython.org/en/latest/library/machine.UART.html
 #
 #   The four bytes of data sent by the sensor:
 #     Byte 0 – Header – always a value of xFF, start of a block of data.
@@ -35,7 +36,6 @@ import time
 debug =False
 
 uart1 = machine.UART(1, 9600, tx=20, rx=21)
-
 
 # expect: UART(1, baudrate=9600, bits=8, parity=None, stop=1, tx=20, rx=21, txbuf=256, rxbuf=256, timeout=0, timeout_char=2, invert=None, irq=0)
 print(uart1)
@@ -83,11 +83,9 @@ print(implementation[0], uname()[3],
       "\nrun on", uname()[4])
 print("====================================")
 
-# A02YYUW seems to need 1 call in setup before use, else get errors the first time
+# A02YYUW seems to need one call before use, then wait 500ms, otherwise get errors the first time
 _ = ultrasonic_distance_uart()
 time.sleep(.5)
-
-
 
 # Main loop
 while True:
