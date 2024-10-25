@@ -3,16 +3,24 @@ from os import uname
 from sys import implementation
 import time
 
-# A02YYUW Waterproof sensor, UART-version (ex: A0221A, may be others)
+# A02YYUW Waterproof sensor, UART-version (mine is: A0221A)
 # connected with RS-485
 #
 # Notes:
-# * Pico has two UARTs (uart(0), and uart(1)
-# * Define uart1 pins for ultrasonic, uart0 typical for REPL so don't use that one
-# * Sensor wires (Red=Vcc, Blk=Gnd, Yellow=tx1=GP20, White=rx1=GP21)
-# * Evidently need to write a byte each time to get sensor to respond
-# * https://docs.micropython.org/en/latest/library/machine.UART.html
+# * Pico has two UARTs: uart(0) and uart(1)
+# * Define uart1 pins for ultrasonic, uart0 typical for REPL so don't use uart0
+#
+# * 4 Sensor wires: 1) Red=Vcc, 2)Blk=Gnd,
+#                   3) Yellow=rx_sensor=pico_tx1(GP20)
+#                   4) White =tx_sensor=pico_rx1(GP21)
+#
 # * https://dronebotworkshop.com/waterproof-ultrasonic/  (note diff wire colors on sensor)
+#   Sensor RX pin controls mode. When held HIGH or not connected (it is internally pulled up),
+#   it will operate every 300ms. If the RX pin is held LOW then the data is output every 100ms.
+#   Pico's UART RX pin to receive the signal/values from the senor's TX pin
+#
+#   BUT, only way it works for me is to write a byte each time to get sensor to respond
+# https://docs.micropython.org/en/latest/library/machine.UART.html
 #
 #   The four bytes of data sent by the sensor:
 #     Byte 0 – Header – always a value of xFF, start of a block of data.
@@ -20,11 +28,15 @@ import time
 #     Byte 2 – Data 0 – low end of the 16-bit data.
 #     Byte 3 – Checksum – addition of previous 3 (B0 + B1 + B2). Only lower 8-bits transmitted.
 #
-# DEBUG NEEDED, can't get this to work: "with Rx on the sensor floating, it will output data ever 300ms"
+# DEBUG NEEDED: "with Rx on the sensor floating, it will output data ever 300ms" -- CANT GET THIS WORKING
+#
+# by bradcar
 
 debug =False
 
 uart1 = machine.UART(1, 9600, tx=20, rx=21)
+
+
 # expect: UART(1, baudrate=9600, bits=8, parity=None, stop=1, tx=20, rx=21, txbuf=256, rxbuf=256, timeout=0, timeout_char=2, invert=None, irq=0)
 print(uart1)
 
@@ -38,7 +50,7 @@ def ultrasonic_distance_uart():
     """
     # REQUIRED write !!!! to get uart1 to send data, two writes then delay not needed
     uart1.write(b'\xff')
-    uart1.write(b'\xff')
+#     uart1.write(b'\xff')
 #    time.sleep_ms(100)  # Small delay to ensure complete data packet reception
     
     if uart1.any():   
@@ -73,6 +85,9 @@ print("====================================")
 
 # A02YYUW seems to need 1 call in setup before use, else get errors the first time
 _ = ultrasonic_distance_uart()
+time.sleep(.5)
+
+
 
 # Main loop
 while True:
