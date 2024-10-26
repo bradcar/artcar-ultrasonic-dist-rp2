@@ -127,8 +127,8 @@ ds_pin = machine.Pin(28)
 dht_sensor = dht.DHT22(dht_pin)
 ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
 oled_spi = machine.SPI(1)
+# print(f"oled_spi:{oled_spi}")
 oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
-print("oled_spi:", oled_spi)
 
 # initialize label position data were manually defined in the Photoshop
 sensor[0].label_startpos_x = 30  # was 41 (-11)
@@ -385,7 +385,7 @@ degree_temp = bytearray([
 ])
 
 rear = True
-show_env = False
+show_env = True
 metric = False
 dht_error = False
 ds_error = False
@@ -425,7 +425,6 @@ def initialize_flipped_bitmaps():
     global flipped_bitmap_sensor_2c_off, flipped_bitmap_sensor_2c_on
     global flipped_bitmap_sensor_2d_off, flipped_bitmap_sensor_2d_on
 
-    # flip-em
     # flip bitmaps: for front tile 1, use rear flipped tile 3
     flipped_bitmap_sensor_0a_off = flip_bitmap_vert(bitmap_sensor_2a_off, 32, 14)
     flipped_bitmap_sensor_0a_on = flip_bitmap_vert(bitmap_sensor_2a_on, 32, 14)
@@ -492,10 +491,9 @@ def outside_temp_ds():
     It is assumed that in setup the function outside_temp_ds_init() is called
     ...or... that outside_temp_ds() has been called before
 
-    :returns: temp celsius & error string
+    :returns: temp Celsius & error string
     """
     celsius = False
-
     #     try:
     #         ds_sensor.convert_temp()
     #     except onewire.OneWireError as e:
@@ -521,7 +519,7 @@ def calc_speed_sound(celsius, percent_humidity):
     """
     calc to update speed of sound based on temp & humidity from the DHT22 sensor
 
-    :param celsius: temp in celsius
+    :param celsius: temp in Celsius
     :param percent_humidity: % humidity
     :returns: speed meter/sec, error string
     """
@@ -985,9 +983,12 @@ print(uart1)
 temp = onboard_temperature()
 print(f"onboard Pico 2 temp = {temp:.1f}C")
 print("====================================")
+print(f"oled_spi:{oled_spi}")
+
 # roms will be a list of sensors on same GPIO pin
 roms = ds_sensor.scan()
 print('Found DS devices, roms: ', roms)
+
 # call first time to set up onewire temp, we don't measure temp in this routine
 error = outside_temp_ds_init()
 if error:
@@ -1003,8 +1004,6 @@ if error:
     oled.show()
     temp_c = None
     humidity = None
-
-initialize_flipped_bitmaps()
 
 # at start display artcar image at top of oled
 temp_f = None
@@ -1032,6 +1031,8 @@ _, _ = ultrasonic_distance_uart()
 zzz(.5)
 _, error = ultrasonic_distance_uart()
 if not error: print("UART ultrasonic [1] found")
+
+initialize_flipped_bitmaps()
 
 zzz(3)
 print("start of main loop\n")
@@ -1068,7 +1069,7 @@ while True:
         temp = onboard_temperature()
         if temp > OVER_TEMP_WARNING: print(f"WARNING: onboard Pico 2 temp = {temp:.1f}C")
 
-        # Outside temp from waterproof ds sensor, outside temps not used yet in this code
+        # Outside temp from waterproof ds sensor
         outside_temp_c, error = outside_temp_ds()
         if error:
             print(f"No Outside Temp: {error}")
