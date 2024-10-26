@@ -35,7 +35,7 @@ import time
 
 debug =False
 
-uart1 = machine.UART(1, 9600, tx=20, rx=21)
+uart1 = machine.UART(1, 9600, tx=Pin(20), rx=Pin(21))
 
 # expect: UART(1, baudrate=9600, bits=8, parity=None, stop=1, tx=20, rx=21, txbuf=256, rxbuf=256, timeout=0, timeout_char=2, invert=None, irq=0)
 print(uart1)
