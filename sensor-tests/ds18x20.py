@@ -39,6 +39,7 @@ while True:
     
     ds_sensor.convert_temp()
     # must sleep 750ms before read 1st value
+    # zzz(10)   # tested to see if we can do this way ahead of time, it works
     zzz(.75)
   
     for rom in roms:
