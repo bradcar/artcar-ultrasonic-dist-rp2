@@ -26,7 +26,7 @@
 # pycharm stubs at: https://micropython-stubs.readthedocs.io/en/main/packages.html#mp-packages
 #
 # TODOs
-#  * expand from one a02yyuw waterproof UART sensor to 3
+#  * expand from one a02yyuw waterproof UART sensor to 3, or switch to a02yyuw PWM
 #  * add button #3 for switching between showing car on oled or
 
 import time
@@ -48,18 +48,16 @@ from machine import Pin
 # from ssd1306 import SSD1306_I2C
 from ssd1306 import SSD1306_SPI
 
-# Constants and setup
+# Constants for  setup, for >3 sensors need rewrite
 DISP_WIDTH = 128
 DISP_HEIGHT = 64
-OVER_TEMP_WARNING = 70.0
-# Define the number of sensors, more than 3 will need redesign
 NUMBER_OF_SENSORS = 3
 
 
 class SensorData:
     def __init__(self, echo_pin, trig_pin):
-        self.trig_pin = trig_pin  # TRIG pin for the ultrasonic distance 
-        self.echo_pin = echo_pin  # ECHO pin for the ultrasonic distance 
+        self.trig_pin = trig_pin  # TRIG pin for the ultrasonic distance
+        self.echo_pin = echo_pin  # ECHO pin for the ultrasonic distance
         self.cm = None  # measured distance in CM
         self.inch = None  # measured distance in inches
         self.label_xpos = 0  # x position of the distance label
@@ -71,59 +69,51 @@ class SensorData:
         self.label_endpos_y = 0  # end Y position for the label
 
 
-MIN_DIST = 2.0
-MAX_DIST = 100.0
-SPEED_SOUND_20C_70H = 343.294
-
-dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)
-dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)
-dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)
-dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)
-
-interrupt_1_flag = 0
-interrupt_2_flag = 0
-debounce_1_time = 0
-debounce_2_time = 0
-
 # === PINS ===
 # internal pins
 on_pico_temp = machine.ADC(4)
 
 # external pins
+uart0 = machine.UART(0, 115200, tx=Pin(0), rx=Pin(1))
 dht_pin = machine.Pin(2)
 button_1 = Pin(5, Pin.IN, Pin.PULL_UP)  # interrupt cm/in button pins
 button_2 = Pin(6, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
 
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
-# i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+# i2c=I2C(0,sda=Pin(12), scl=Pin(13), freq=400000)
 # oled = SSD1306_I2C(DISP_WIDTH, DISP_HEIGHT, i2c)
-# https://coxxect.blogspot.com/2024/10/multi-ssd1306-oled-on-raspberry-pi-pico.html
+
+# ssd1306 SDI SW setup for ssd1309 SDI
 cs = machine.Pin(9)  # dummy (any un-used pin), no connection
-# scl (SCLK) gp10 
+# scl (SCLK) gp10
 # SDA (MOSI) gp11
 res = machine.Pin(12)  # RES (RST)  gp12
 dc = machine.Pin(13)  # DC         gp13
 
-# Create a list to hold the sensor data for each sensor
-# set up for (21,20, 19,18, 17,16)
-sensor = [SensorData(trig_pin=21, echo_pin=20),
-          SensorData(trig_pin=3, echo_pin=4),
-          SensorData(trig_pin=17, echo_pin=16)]
-# sensor = [SensorData(trig_pin=21, echo_pin=20),
-#           SensorData(trig_pin=19, echo_pin=18),
-#           SensorData(trig_pin=17, echo_pin=16)]
+# testing config: set up pins fo ultrasonic sensors using SensorData objects
+sensor = [
+    SensorData(echo_pin=20, trig_pin=21),
+    SensorData(echo_pin=4, trig_pin=3),
+    SensorData(echo_pin=16, trig_pin=17)
+]
+# # final config: set up pins fo ultrasonic sensors using SensorData objects
+# sensor = [
+#     SensorData(echo_pin=20, trig_pin=21),
+#     SensorData(echo_pin=18, trig_pin=19),
+#     SensorData(echo_pin=16, trig_pin=17)
+# ]
 
-# Initialize empty lists for trigger and echo
 trigger = []
 echo = []
-
-for i in range(NUMBER_OF_SENSORS):
-    trigger_pin = Pin(sensor[i].trig_pin, Pin.OUT)
-    echo_pin = Pin(sensor[i].echo_pin, Pin.IN)
+# set up trigger & echo pings
+for i in range(len(sensor)):
+    trigger_pin = sensor[i].trig_pin
+    echo_pin = sensor[i].echo_pin
     trigger.append(trigger_pin)
     echo.append(echo_pin)
-led = Pin(25, Pin.OUT)
+
 uart1 = machine.UART(1, 9600, tx=Pin(20), rx=Pin(21))
+led = Pin(25, Pin.OUT)
 ds_pin = machine.Pin(28)
 
 dht_sensor = dht.DHT22(dht_pin)
@@ -132,21 +122,8 @@ oled_spi = machine.SPI(1)
 # print(f"oled_spi:{oled_spi}")
 oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
 
-# initialize label position data were manually defined in the Photoshop
-sensor[0].label_startpos_x = 30  # was 41 (-11)
-sensor[0].label_startpos_y = 20
-sensor[0].label_endpos_x = 18  # was 30, adjust 1 more for symmetry
-sensor[0].label_endpos_y = 56  # was 58
-sensor[1].label_startpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
-sensor[1].label_startpos_y = 23
-sensor[1].label_endpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
-sensor[1].label_endpos_y = 56  # was 60
-sensor[2].label_startpos_x = 74  # was 85 (-11)
-sensor[2].label_startpos_y = 20
-sensor[2].label_endpos_x = 86  # was 97 (-11)
-sensor[2].label_endpos_y = 56  # was 57
 
-# DISPLAY IMAGES
+# === Bitmap DISPLAY IMAGES ====
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
 # const unsigned char bitmap_artcar_image[] PROGMEM = {0xc9,0x04,0x52, ...
 # can be bitmap_artcar_image=bytearray(b'\xc9\x04\x59
@@ -385,6 +362,11 @@ degree_temp = bytearray([
     0xf0, 0x00, 0x0f, 0x80, 0x00, 0x01, 0x80, 0x00, 0x0d, 0x80, 0x00, 0x0d, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0xf0, 0x00, 0x0f
 ])
+MIN_DIST = 2.0  # for tiles
+MAX_DIST = 100.0  # for tiles
+SPEED_SOUND_20C_70H = 343.294
+OVER_TEMP_WARNING = 70.0
+
 
 rear = True
 show_env = True
@@ -392,6 +374,30 @@ metric = False
 dht_error = False
 ds_error = False
 debug = False
+
+dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)  # tile1 step size
+dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)  # tile2 step size
+dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)  # tile3 step size
+dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)  # tile4 step size
+
+# numeric label position, to print distance # over tiles
+sensor[0].label_startpos_x = 30  # was 41 (-11)
+sensor[0].label_startpos_y = 20
+sensor[0].label_endpos_x = 18  # was 30, adjust 1 more for symmetry
+sensor[0].label_endpos_y = 56  # was 58
+sensor[1].label_startpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
+sensor[1].label_startpos_y = 23
+sensor[1].label_endpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
+sensor[1].label_endpos_y = 56  # was 60
+sensor[2].label_startpos_x = 74  # was 85 (-11)
+sensor[2].label_startpos_y = 20
+sensor[2].label_endpos_x = 86  # was 97 (-11)
+sensor[2].label_endpos_y = 56  # was 57
+
+interrupt_1_flag = 0
+interrupt_2_flag = 0
+debounce_1_time = 0
+debounce_2_time = 0
 
 
 # Button debouncer with efficient interrupts, which don't take CPU cycles!
@@ -489,10 +495,10 @@ def outside_temp_ds_init():
 
 def outside_temp_ds():
     """
-    Get the outside temp DS sensor
+    Get the outside temp DS sensor (waterproof DS18B20)
     Because we must call ds_sensor.convert_temp() at least 750ms before read data,
     we will call outside_temp_ds_init() in setup (it wraps this function)
-    
+
     Notice at the end of this function we call ds_sensor.convert_temp() in order to
     have enough time before we read again.
     We ONLY call this function once every 3 seconds, which means there will
@@ -534,7 +540,7 @@ def calc_speed_sound(celsius, percent_humidity):
     if celsius > 0 and percent_humidity > 0:
         # Speed sound with temp correction: (20.05 * sqrt(273.16 + temp_c))
         # online temp/humid calc: http://resource.npl.co.uk/acoustics/techguides/speedair/
-        # created spreadsheet of diffs between above temp formula and online temp/humid 
+        # created spreadsheet of diffs between above temp formula and online temp/humid
         # did a 2d linear fit to create my own correction, error is now +/-0.07%
         # valid for 0C to 30C temp & 75 to 102 kPa pressure
         meter_per_sec = (20.05 * sqrt(273.16 + celsius)) \
@@ -583,13 +589,13 @@ def ultrasonic_distance_uart():
     Byte 2 – Data 0 – low end of the 16-bit data.
     Byte 3 – Checksum – addition of previous 3 (B0 + B1 + B2). Only lower 8-bits are held here.
 
-    A02YYUW: 3.3v to 5v, +/- 0.2cm,  3cm to 450cm, $16, only outputs UART serial data, RS485 output, 8mA
-     - outputs serial data UART, connector: JST PH 4-pin
+    A02YYUW: 3.3v to 5v, +/- 0.2cm, 3cm to 450cm (1.2" to 177") $16
+     - only outputs UART serial data, RS485 output, 8mA, connector: JST PH 4-pin
      - Sensor wires (Red=Vcc, Blk=Gnd, Yellow=tx1=GP20, White=rx1=GP21)
      - RX pin controls the data output.
        - HIGH or not connected (internal pulled up) then results every 300ms.
        - RX pin held LOW then results every 100ms. (less accurate)
-       - 
+       -
     JSN-SR04T: +/1 1.0mc, 20cm to 600cm, $10,
      - Mode 0(default): must measure time, use ultrasonic_distance_pwm() code instead
      - Mode 1: outputs serial data UART, measurement every 200ms. You read the data on the Echo pin
@@ -630,36 +636,36 @@ def ultrasonic_distance_uart():
     return None, f"ULTRASONIC_ERROR: UART Sensor- no results"
 
 
-def ultrasonic_distance_pwm(i, speed_of_sound, timeout=50000):
+def ultrasonic_distance_pwm(j, speed_of_sound, timeout=50000):
     """
     Get ultrasonic distance from a sensor where ping and measure with a timeout.
 
     HC-SR04: most Send a 10uS high to trigger (default mode 1)
     JSN-SR04T: Send a 20uS high to trigger, instead of 10
-    A02YYUW: only outputs UART serial data, must use ultrasonic_distance_uart(i) 
+    A02YYUW: only outputs UART serial data, must use ultrasonic_distance_uart(i)
     https://dronebotworkshop.com/waterproof-ultrasonic/
 
-    :param i: index for ultrasonic sensor.
-    :param speed_of_sound: index for ultrasonic sensor.
+    :param j: index for ultrasonic sensor.
+    :param speed_of_sound: speed of sound for distance calculation
     :param timeout: Max usecs to wait for the echo signal return. default 50ms.
     :returns: cm distance or error string.
     """
-    trigger[i].low()
+    trigger[j].low()
     utime.sleep_us(2)
-    trigger[i].high()
-    utime.sleep_us(20)  # JSN-SR04T: best with 20uS high to trigger instead of 10 
-    trigger[i].low()
+    trigger[j].high()
+    utime.sleep_us(20)  # JSN-SR04T: best with 20uS high to trigger instead of 10
+    trigger[j].low()
 
     # Wait for echo to go high, with timeout
     start = utime.ticks_us()
-    while echo[i].value() == 0:
+    while echo[j].value() == 0:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
             return 0.0, f"ULTRASONIC_ERROR: Sensor {i} - too close or malfunction."
     signal_off = utime.ticks_us()
 
     # Wait for echo to go low, with timeout
     start = utime.ticks_us()
-    while echo[i].value() == 1:
+    while echo[j].value() == 1:
         if utime.ticks_diff(utime.ticks_us(), start) > timeout:
             return 300.0, f"ULTRASONIC_ERROR: Sensor {i} - no signal returned, too far."
     signal_on = utime.ticks_us()
@@ -711,7 +717,7 @@ def flip_bitmap_vert(bitmap, width, height):
 
     :param bitmap: byte array of image
     :param width: pixel width of the image (must be divisible by 8)
-    :param height: pixel height of the image 
+    :param height: pixel height of the image
     :return: vertically flipped bytearray (top for bottom)
     """
     # Each row has (width // 8), 8 pixels = 1 byte
@@ -940,22 +946,22 @@ def display_tiles_dist():
             blit_white_only(bmp_3d, 32, 18, 16, DISP_HEIGHT - 43 - 18)
 
     # round to nearest
-    for i in working_ultrasonics:
+    for j in working_ultrasonics:
         if metric:
-            int_string = str(int(sensor[i].cm + 0.5))
+            int_string = str(int(sensor[j].cm + 0.5))
         else:
-            int_string = str(int(sensor[i].inch + 0.5))
+            int_string = str(int(sensor[j].inch + 0.5))
         digits = get_str_width(int_string)
 
-        startpos_x = sensor[i].label_startpos_x + (3 - digits) * 4
-        endpos_x = sensor[i].label_endpos_x + (3 - digits) * 4
+        startpos_x = sensor[j].label_startpos_x + (3 - digits) * 4
+        endpos_x = sensor[j].label_endpos_x + (3 - digits) * 4
 
-        # Display distance label    
-        xpos = int(map_range(constrain(sensor[i].cm, MIN_DIST, MAX_DIST),
+        # Display distance label
+        xpos = int(map_range(constrain(sensor[j].cm, MIN_DIST, MAX_DIST),
                              MIN_DIST, MAX_DIST, startpos_x, endpos_x))
-        ypos = int(map_range(constrain(sensor[i].cm, MIN_DIST, MAX_DIST),
-                             MIN_DIST, MAX_DIST, sensor[i].label_startpos_y, sensor[i].label_endpos_y))
-        
+        ypos = int(map_range(constrain(sensor[j].cm, MIN_DIST, MAX_DIST),
+                             MIN_DIST, MAX_DIST, sensor[j].label_startpos_y, sensor[j].label_endpos_y))
+
         # print black box slightly larger than digits, then print digits
         if rear:
             oled.fill_rect(xpos, ypos - 1, 8 * digits, 9, 0)
@@ -969,7 +975,7 @@ def display_tiles_dist():
 def onboard_temperature():
     """
     # pico data pico 2 rp2350 data sheet on page 1068
-    # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree 
+    # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree
     """
     adc_value = on_pico_temp.read_u16()
     volt = (3.3 / 65535) * adc_value
@@ -979,6 +985,10 @@ def onboard_temperature():
 
 
 # startup code
+speed_sound = SPEED_SOUND_20C_70H
+temp_f = None
+temp_c = None
+humidity = None
 print("Starting...")
 print("====================================")
 print(implementation[0], uname()[3],
@@ -1010,22 +1020,18 @@ if error:
     humidity = None
 
 # at start display artcar image at top of oled
-temp_f = None
-temp_c = None
-humidity = None
-speed_sound = SPEED_SOUND_20C_70H
 oled.fill(0)
 display_car(None, None)
 oled.show()
 
 working_ultrasonics = []
 nonworking_ultrasonics = []
-for i in range(NUMBER_OF_SENSORS):
-    distance, error = ultrasonic_distance_pwm(i, speed_sound, timeout=50000)
-    if error:
-        nonworking_ultrasonics.append(i)
-    else:
-        working_ultrasonics.append(i)
+# for i in range(NUMBER_OF_SENSORS):
+#     distance, error = ultrasonic_distance_pwm(i, speed_sound, timeout=50000)
+#     if error:
+#         nonworking_ultrasonics.append(i)
+#     else:
+#         working_ultrasonics.append(i)
 print(f"Working PWM Ultrasonic sensors: {working_ultrasonics}")
 print(f"Non-working PWM Ultrasonic sensors: {nonworking_ultrasonics}")
 print(f"Default Speed Sound: {speed_sound:.1f} m/s")
@@ -1118,15 +1124,17 @@ try:
 
         # get distance from pwm ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
         # sensors: left front/rear = 0, middle=1  right front/rear =2
-        for i in working_ultrasonics:
-            sensor[i].cm, error = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
-            if error:
-                print(error)
-            else:
-                sensor[i].inch = sensor[i].cm / 2.54
+        #         for i in working_ultrasonics:
+        #             sensor[i].cm, error = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
+        #             if error:
+        #                 print(error)
+        #             else:
+        #                 sensor[i].inch = sensor[i].cm / 2.54
 
         ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
         # we know pwm sensor is at i=1 so just overwrite with uart sensor
+        working_ultrasonics = [1]
+        nonworking_ultrasonics = [0, 2]
         sensor[1].cm, error = ultrasonic_distance_uart()
         if error:
             print(error)
@@ -1149,8 +1157,10 @@ try:
 
 # if control-c at end clean up pico2
 except KeyboardInterrupt:
-    oled.fill(0)   # turn off oled
-    oled.show()    # show on oled
+    oled.fill(0)  # turn off oled
+    oled.show()  # show on oled
+    print("Exit: ctrl-c")
 #     GPIO.cleanup()
-except:  
-    print ("Other error or exception occurred!")
+# except:
+#     print ("Other error or exception occurred!")
+
