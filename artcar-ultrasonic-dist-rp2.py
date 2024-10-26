@@ -368,38 +368,6 @@ SPEED_SOUND_20C_70H = 343.294
 OVER_TEMP_WARNING = 70.0
 
 
-rear = True
-show_env = True
-metric = False
-dht_error = False
-ds_error = False
-debug = False
-
-dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)  # tile1 step size
-dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)  # tile2 step size
-dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)  # tile3 step size
-dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)  # tile4 step size
-
-# numeric label position, to print distance # over tiles
-sensor[0].label_startpos_x = 30  # was 41 (-11)
-sensor[0].label_startpos_y = 20
-sensor[0].label_endpos_x = 18  # was 30, adjust 1 more for symmetry
-sensor[0].label_endpos_y = 56  # was 58
-sensor[1].label_startpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
-sensor[1].label_startpos_y = 23
-sensor[1].label_endpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
-sensor[1].label_endpos_y = 56  # was 60
-sensor[2].label_startpos_x = 74  # was 85 (-11)
-sensor[2].label_startpos_y = 20
-sensor[2].label_endpos_x = 86  # was 97 (-11)
-sensor[2].label_endpos_y = 56  # was 57
-
-interrupt_1_flag = 0
-interrupt_2_flag = 0
-debounce_1_time = 0
-debounce_2_time = 0
-
-
 # Button debouncer with efficient interrupts, which don't take CPU cycles!
 # https://electrocredible.com/raspberry-pi-pico-external-interrupts-button-micropython/
 def callback(pin):
@@ -984,11 +952,43 @@ def onboard_temperature():
     return celsius
 
 
-# startup code
+# =========================  startup code =========================
+rear = True
+show_env = True
+metric = False
+dht_error = False
+ds_error = False
+debug = False
+
+dist_step_01 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 1.0)  # tile1 step size
+dist_step_02 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 2.0)  # tile2 step size
+dist_step_03 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 3.0)  # tile3 step size
+dist_step_04 = MIN_DIST + round((MAX_DIST - MIN_DIST) / 4.0 * 4.0)  # tile4 step size
+
+# numeric label position, to print distance # over tiles
+sensor[0].label_startpos_x = 30  # was 41 (-11)
+sensor[0].label_startpos_y = 20
+sensor[0].label_endpos_x = 18  # was 30, adjust 1 more for symmetry
+sensor[0].label_endpos_y = 56  # was 58
+sensor[1].label_startpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
+sensor[1].label_startpos_y = 23
+sensor[1].label_endpos_x = 52  # was 63 (-11) 52px 3 dig, 56 2 dig, 60 for 1 digit
+sensor[1].label_endpos_y = 56  # was 60
+sensor[2].label_startpos_x = 74  # was 85 (-11)
+sensor[2].label_startpos_y = 20
+sensor[2].label_endpos_x = 86  # was 97 (-11)
+sensor[2].label_endpos_y = 56  # was 57
+
+interrupt_1_flag = 0
+interrupt_2_flag = 0
+debounce_1_time = 0
+debounce_2_time = 0
+
 speed_sound = SPEED_SOUND_20C_70H
 temp_f = None
 temp_c = None
 humidity = None
+
 print("Starting...")
 print("====================================")
 print(implementation[0], uname()[3],
