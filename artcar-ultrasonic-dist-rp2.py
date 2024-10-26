@@ -384,7 +384,7 @@ degree_temp = bytearray([
 ])
 
 rear = True
-show_env = False
+show_env = True
 metric = False
 dht_error = False
 ds_error = False
@@ -462,24 +462,50 @@ def get_str_width(text):
     # MicroPython has 8x8 fonts  x*9-1 ?
     return len(text)
 
-def outside_temp_ds():
+def outside_temp_ds_init():
     """
-    calc to update speed of sound based on temp & humidity from the DHT22 sensor
+    init onewire, this is special code for this use we are only asking outside temp
+    every 3 seconds so do init in setup, then read temp and prepare for next in
+    outside_temp_ds()
     
-    :returns: temp celsius & error string
+    :returns: error string if happens
     """
     celsius = False
     try:
         ds_sensor.convert_temp()
     except onewire.OneWireError as e:
         print("DS temp onewire: " + str(e) + '\n')
-        return None, "ERROR_DS_TEMP_ONEWIRE:"+ str(e)
+        return "ERROR_DS_TEMP_ONEWIRE:"+ str(e)
+    return None
 
-    # must sleep 750ms before read 1st value
-    zzz(.75)
+def outside_temp_ds():
+    """
+    calc to update speed of sound based on temp & humidity from the DHT22 sensor
+    It is assume that the first time in setup that outside_temp_ds_init() is called
+    ...or... that outside_temp_ds() has been called before
+    
+    :returns: temp celsius & error string
+    """
+    celsius = False
+
+#     try:
+#         ds_sensor.convert_temp()
+#     except onewire.OneWireError as e:
+#         print("DS temp onewire: " + str(e) + '\n')
+#         return None, "ERROR_DS_TEMP_ONEWIRE:"+ str(e)
+# # must sleep 750ms before read 1st value
+#     zzz(.75)
     for rom in roms:
         celsius = ds_sensor.read_temp(rom)
         if debug: print(f"rom={rom}\n  tempC={celsius:.2f}")
+    
+    #prepare for next call, which in this main loop is ~3 seconds later
+    try:
+        ds_sensor.convert_temp()
+    except onewire.OneWireError as e:
+        print("DS temp onewire: " + str(e) + '\n')
+        return None, "ERROR_DS_TEMP_ONEWIRE:"+ str(e)
+
     return celsius, None
    
 def calc_speed_sound(celsius, percent_humidity):
@@ -930,7 +956,7 @@ def onboard_temperature():
     adc_value = on_pico_temp.read_u16()
     volt = (3.3/65535) * adc_value
     celsius = 27 - (volt - 0.706)/0.001721
-    if debug: print(f"on chip temp = {temp_chip:.3f}C")
+    if debug: print(f"on chip temp = {celsius:.3f}C")
     return celsius
 
 # startup code
@@ -964,6 +990,10 @@ oled.fill(0)
 display_car(None, None)
 oled.show()
 zzz(3)
+
+# call first time to set up onewire temp, we don't mmeasure temp in this routine
+error = outside_temp_ds_init()
+if error: print(error)
 
 # check status of DHT sensor, do not keep any measurements
 _, _, error = dht_temp_humidity()
@@ -1004,8 +1034,10 @@ while True:
         if debug: print("button 2 Interrupt Detected: rear/front")
         rear = not rear   # Toggle between rear /front
 
-    # every 3 sec, calc speed of sound based on temp & humidity
-    # Note: Temp & humidity correction for the speed of sound
+    # EVERY 3 SEOCNDS, calc speed of sound based on
+    # * onewire outside temp
+    # * dht22 temp & humidity
+    # Note: Temp & humidity correction is for the speed of sound
     # speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
     # speed of sound at 30C goes with a humidity of 0% to 90% goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
     # ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
@@ -1049,8 +1081,9 @@ while True:
             temp_f = (temp_c * 9.0 / 5.0) + 32.0
         first_run = False
             
-        if debug: print (f"outside={outside_temp_c:.3f}, inside={inside_temp_c:.3f}")
-        if debug: print (f"humidity={humidity:.1f}, speed_sound={speed_sound:.1f}")
+        if debug and outside_temp_c: print (f"outside={outside_temp_c:.3f}")
+        if debug and inside_temp_c:
+            print (f"inside={inside_temp_c:.3f}, humidity={humidity:.1f}, speed_sound={speed_sound:.1f}")
         if debug: print (f"temp_c={temp_c:.3f}\n")
 
         #calc_speed_sound_from_dht()
