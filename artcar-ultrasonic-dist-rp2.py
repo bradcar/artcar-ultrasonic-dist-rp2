@@ -40,6 +40,7 @@ import ds18x20
 import machine
 import onewire
 import utime
+# import RPi.GPIO as GPIO
 from framebuf import FrameBuffer, MONO_HLSB
 from machine import Pin
 # ic2
@@ -500,6 +501,7 @@ def outside_temp_ds():
     :returns: temp Celsius & error string
     """
     celsius = False
+    # NOTE: if this routine is called to both setup and test temp, need to uncomment this code
     #     try:
     #         ds_sensor.convert_temp()
     #     except onewire.OneWireError as e:
@@ -532,7 +534,7 @@ def calc_speed_sound(celsius, percent_humidity):
     if celsius > 0 and percent_humidity > 0:
         # Speed sound with temp correction: (20.05 * sqrt(273.16 + temp_c))
         # online temp/humid calc: http://resource.npl.co.uk/acoustics/techguides/speedair/
-        # created spreadsheet of diffs between online temp/humid and temp formula
+        # created spreadsheet of diffs between above temp formula and online temp/humid 
         # did a 2d linear fit to create my own correction, error is now +/-0.07%
         # valid for 0C to 30C temp & 75 to 102 kPa pressure
         meter_per_sec = (20.05 * sqrt(273.16 + celsius)) \
@@ -559,7 +561,6 @@ def dht_temp_humidity():
             print(f"DHT Humidity: {humidity:.2f}%")
     except Exception as e:
         return None, None, "ERROR_TEMP_HUMID:" + str(e)
-
     return celsius, percent_humidity, None
 
 
@@ -583,16 +584,16 @@ def ultrasonic_distance_uart():
     Byte 3 – Checksum – addition of previous 3 (B0 + B1 + B2). Only lower 8-bits are held here.
 
     A02YYUW: 3.3v to 5v, +/- 0.2cm,  3cm to 450cm, $16, only outputs UART serial data, RS485 output, 8mA
-     - outputs serial data UART
+     - outputs serial data UART, connector: JST PH 4-pin
      - Sensor wires (Red=Vcc, Blk=Gnd, Yellow=tx1=GP20, White=rx1=GP21)
      - RX pin controls the data output.
        - HIGH or not connected (internal pulled up) then results every 300ms.
        - RX pin held LOW then results every 100ms. (less accurate)
-       - JST PH 4-pin used by A02YYUW
+       - 
     JSN-SR04T: +/1 1.0mc, 20cm to 600cm, $10,
-     - Mode 0(default): must measure, use ultrasonic_distance_pwm() code instead
+     - Mode 0(default): must measure time, use ultrasonic_distance_pwm() code instead
      - Mode 1: outputs serial data UART, measurement every 200ms. You read the data on the Echo pin
-     - Mode 2: you send #55, then it outputs serial data UART, You read the data on the Echo pin
+     - Mode 2: need to send #55, then it outputs serial data as UART and one reads from Echo pin
     https://dronebotworkshop.com/waterproof-ultrasonic/
     https://www.amazon.com/Ultrasonic-Distance-Controlled-Detector-Waterproof/dp/B0CFFTS71Y/
 
@@ -713,18 +714,18 @@ def flip_bitmap_vert(bitmap, width, height):
     :param height: pixel height of the image 
     :return: vertically flipped bytearray (top for bottom)
     """
-    # Each row has `width // 8` bytes (because 8 pixels = 1 byte).
+    # Each row has (width // 8), 8 pixels = 1 byte
     row_size = width // 8
     flipped_bitmap = bytearray(len(bitmap))
 
-    # reverse the order of each row.
+    # reverse the order of each row
     for y in range(height):
-        # Copy each row from the original image.
+        # Copy each row from the original image
         start_index = y * row_size
         end_index = start_index + row_size
         row_data = bitmap[start_index:end_index]
 
-        # Place it in the flipped position in the new byte array.
+        # Place it in the flipped position in the new byte array
         flipped_start = (height - y - 1) * row_size
         flipped_bitmap[flipped_start:flipped_start + row_size] = row_data
     return flipped_bitmap
@@ -954,6 +955,7 @@ def display_tiles_dist():
                              MIN_DIST, MAX_DIST, startpos_x, endpos_x))
         ypos = int(map_range(constrain(sensor[i].cm, MIN_DIST, MAX_DIST),
                              MIN_DIST, MAX_DIST, sensor[i].label_startpos_y, sensor[i].label_endpos_y))
+        
         # print black box slightly larger than digits, then print digits
         if rear:
             oled.fill_rect(xpos, ypos - 1, 8 * digits, 9, 0)
@@ -966,7 +968,7 @@ def display_tiles_dist():
 
 def onboard_temperature():
     """
-    # pico data pico 2 rp2350 data sheet page 1068
+    # pico data pico 2 rp2350 data sheet on page 1068
     # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree 
     """
     adc_value = on_pico_temp.read_u16()
@@ -1041,114 +1043,114 @@ print("start of main loop\n")
 # main loop
 first_run = True
 loop_time = time.ticks_ms()
-while True:
-    elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
-    if debug: print(f"Loop time duration ={elapsed_time}")
 
-    # Button 1: cm/in
-    if interrupt_1_flag == 1:
-        interrupt_1_flag = 0
-        if debug: print("button 1 Interrupt Detected: in/cm")
-        metric = not metric  # Toggle between metric and imperial units
+try:
+    while True:
+        elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
+        if debug: print(f"Loop time duration ={elapsed_time}")
 
-    # Button 2: rear sensors or front sensors
-    if interrupt_2_flag == 1:
-        interrupt_2_flag = 0
-        if debug: print("button 2 Interrupt Detected: rear/front")
-        rear = not rear  # Toggle between rear /front
+        # Button 1: cm/in
+        if interrupt_1_flag == 1:
+            interrupt_1_flag = 0
+            if debug: print("button 1 Interrupt Detected: in/cm")
+            metric = not metric  # Toggle between metric and imperial units
 
-    # EVERY 3 SECONDS, calc speed of sound based on
-    # * onewire outside temp
-    # * dht22 temp & humidity
-    # Note: Temp & humidity correction is for the speed of sound
-    # speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
-    # speed of sound at 30C goes with a humidity of 0% to 90% goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
-    # ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
-    if first_run or elapsed_time > 3000:
-        loop_time = time.ticks_ms()
+        # Button 2: rear sensors or front sensors
+        if interrupt_2_flag == 1:
+            interrupt_2_flag = 0
+            if debug: print("button 2 Interrupt Detected: rear/front")
+            rear = not rear  # Toggle between rear /front
 
-        # check for over temperature onboard pico
-        temp = onboard_temperature()
-        if temp > OVER_TEMP_WARNING: print(f"WARNING: onboard Pico 2 temp = {temp:.1f}C")
+        # EVERY 3 SECONDS, calc speed of sound based on
+        # * onewire outside temp
+        # * dht22 temp & humidity
+        # Note: Temp & humidity correction is for the speed of sound
+        # speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
+        # speed of sound at 30C goes with a humidity of 0% to 90% goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
+        # ...humidity effect is negligible, but I had a dht22 which does both, so why not :)
+        if first_run or elapsed_time > 3000:
+            loop_time = time.ticks_ms()
 
-        # Outside temp from waterproof ds sensor
-        outside_temp_c, error = outside_temp_ds()
-        if error:
-            print(f"No Outside Temp: {error}")
-        else:
-            if debug: print(f"Outside temp C = {outside_temp_c:.2f}")
+            # check for over temperature onboard pico
+            temp = onboard_temperature()
+            if temp > OVER_TEMP_WARNING: print(f"WARNING: onboard Pico 2 temp = {temp:.1f}C")
 
-        # Inside Temp & humidity dht sensor
-        inside_temp_c, humidity, error = dht_temp_humidity()
-        if error:
-            print(f"No Inside Temp: {error}")
-        else:
-            if debug: print(f"Inside temp C = {inside_temp_c:.2f}")
+            # Outside temp from waterproof ds sensor
+            outside_temp_c, error = outside_temp_ds()
+            if error:
+                print(f"No Outside Temp: {error}")
+            else:
+                if debug: print(f"Outside temp C = {outside_temp_c:.2f}")
 
-        # if no outside temp use inside temp
-        # if no inside temp/humidity use 70%
-        # if no temps use default speed of sound
-        if outside_temp_c and inside_temp_c:
-            temp_c = outside_temp_c
-            speed_sound, _ = calc_speed_sound(temp_c, humidity)
-        elif outside_temp_c:
-            temp_c = outside_temp_c
-            speed_sound, _ = calc_speed_sound(temp_c, 70.0)
-            humidity = None
-        elif inside_temp_c:
-            temp_c = inside_temp_c
-            speed_sound, _ = calc_speed_sound(temp_c, humidity)
-        else:
-            speed_sound = SPEED_SOUND_20C_70H
-        if temp_c:
-            temp_f = (temp_c * 9.0 / 5.0) + 32.0
-        first_run = False
+            # Inside Temp & humidity dht sensor
+            inside_temp_c, humidity, error = dht_temp_humidity()
+            if error:
+                print(f"No Inside Temp: {error}")
+            else:
+                if debug: print(f"Inside temp C = {inside_temp_c:.2f}")
 
-        if debug and outside_temp_c: print(f"outside={outside_temp_c:.3f}")
-        if debug and inside_temp_c:
-            print(f"inside={inside_temp_c:.3f}, humidity={humidity:.1f}, speed_sound={speed_sound:.1f}")
-        if debug: print(f"temp_c={temp_c:.3f}\n")
+            # if no outside temp use inside temp
+            # if no inside temp/humidity use 70%
+            # if no temps use default speed of sound
+            if outside_temp_c and inside_temp_c:
+                temp_c = outside_temp_c
+                speed_sound, _ = calc_speed_sound(temp_c, humidity)
+            elif outside_temp_c:
+                temp_c = outside_temp_c
+                speed_sound, _ = calc_speed_sound(temp_c, 70.0)
+                humidity = None
+            elif inside_temp_c:
+                temp_c = inside_temp_c
+                speed_sound, _ = calc_speed_sound(temp_c, humidity)
+            else:
+                speed_sound = SPEED_SOUND_20C_70H
+            if temp_c:
+                temp_f = (temp_c * 9.0 / 5.0) + 32.0
+            first_run = False
 
-        # calc_speed_sound_from_dht()
-        # calc_speed_sound(celsius, percent_humidity)
+            if debug and outside_temp_c: print(f"outside={outside_temp_c:.3f}")
+            if debug and inside_temp_c:
+                print(f"inside={inside_temp_c:.3f}, humidity={humidity:.1f}, speed_sound={speed_sound:.1f}")
+            if debug: print(f"temp_c={temp_c:.3f}\n")
 
-    # get distance from pwm ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
-    # sensors: left front/rear = 0, middle=1  right front/rear =2
-    for i in working_ultrasonics:
-        sensor[i].cm, error = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
+            # calc_speed_sound_from_dht()
+            # calc_speed_sound(celsius, percent_humidity)
+
+        # get distance from pwm ultrasonic sensor, 30ms round trip maz ia 514cm or 202in
+        # sensors: left front/rear = 0, middle=1  right front/rear =2
+        for i in working_ultrasonics:
+            sensor[i].cm, error = ultrasonic_distance_pwm(i, speed_sound, timeout=30000)
+            if error:
+                print(error)
+            else:
+                sensor[i].inch = sensor[i].cm / 2.54
+
+        ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
+        # we know pwm sensor is at i=1 so just overwrite with uart sensor
+        sensor[1].cm, error = ultrasonic_distance_uart()
         if error:
             print(error)
         else:
-            sensor[i].inch = sensor[i].cm / 2.54
+            sensor[1].inch = sensor[1].cm / 2.54
+        ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
 
-    ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
-    # we know pwm sensor is i=1 so just overwrite with uart sensor
-    sensor[1].cm, error = ultrasonic_distance_uart()
-    if error:
-        print(error)
-    else:
-        sensor[1].inch = sensor[1].cm / 2.54
-    ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
+        if show_env:
+            # pick first working ultrasonic to show
+            display_environment(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0)
+        else:
+            oled.fill(0)
+            display_car(temp_c, temp_f)
+            display_tiles_dist()
+            oled.show()
 
-    if show_env:
-        # pick first working ultrasonic to show
-        display_environment(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0)
-    else:
-        oled.fill(0)
-        display_car(temp_c, temp_f)
-        display_tiles_dist()
-        oled.show()
+        # Every loop do this
+        led.toggle()
+        time.sleep_ms(300)
 
-    # Every loop do this
-    led.toggle()
-    time.sleep_ms(300)
-
-# # AT SOME POINT
-# try:
-# # where the action happens  
-#     while True:
-# #
-# except KeyboardInterrupt:
-#     oled.fill(0)   # turn off oled
-#     oled.show()    # show on oled
+# if control-c at end clean up pico2
+except KeyboardInterrupt:
+    oled.fill(0)   # turn off oled
+    oled.show()    # show on oled
 #     GPIO.cleanup()
+except:  
+    print ("Other error or exception occurred!")
