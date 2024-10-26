@@ -18,7 +18,7 @@
 #    # by bradcar
 #
 # project Based on GREAT work by upir!!!
-#     youTube full video: https://youtu.be/gg08H-6Z1Lo
+#     YouTube full video: https://youtu.be/gg08H-6Z1Lo
 #     created by upir, 2022
 #
 # https://micropython.org/download/RPI_PICO2/ for latest .uf2 preview
@@ -121,7 +121,7 @@ for i in range(NUMBER_OF_SENSORS):
     trigger.append(trigger_pin)
     echo.append(echo_pin)
 led = Pin(25, Pin.OUT)
-uart1 = machine.UART(1, 9600, tx=20, rx=21)
+uart1 = machine.UART(1, 9600, tx=Pin(20), rx=Pin(21))
 ds_pin = machine.Pin(28)
 
 dht_sensor = dht.DHT22(dht_pin)
@@ -478,7 +478,6 @@ def outside_temp_ds_init():
 
     :returns: error string if happens
     """
-    celsius = False
     try:
         ds_sensor.convert_temp()
     except onewire.OneWireError as e:
@@ -490,7 +489,7 @@ def outside_temp_ds_init():
 def outside_temp_ds():
     """
     calc to update speed of sound based on temp & humidity from the DHT22 sensor
-    It is assume that the first time in setup that outside_temp_ds_init() is called
+    It is assumed that in setup the function outside_temp_ds_init() is called
     ...or... that outside_temp_ds() has been called before
 
     :returns: temp celsius & error string
@@ -622,11 +621,11 @@ def ultrasonic_distance_uart():
             # Verify if the checksum matches the last byte in the packet
             if data_buffer[3] == checksum:
                 # Calculate distance in mm from the data bytes
-                distance = (data_buffer[1] << 8) + data_buffer[2]
-                if debug: print(f"distance={distance} mm\n")
-                return distance / 10.0, None
+                mm_distance = (data_buffer[1] << 8) + data_buffer[2]
+                if debug: print(f"distance={mm_distance} mm\n")
+                return mm_distance / 10.0, None
 
-    # if get here, then error state
+    # if here, then error state
     return None, f"ULTRASONIC_ERROR: UART Sensor- no results"
 
 
@@ -734,7 +733,7 @@ def flip_bitmap_vert(bitmap, width, height):
 def blit_white_only(source_fb, w, h, x, y):
     """
     only send white pixels one by one
-    :param source_fb: framebugger to flip
+    :param source_fb: framebuffer to flip
     :param w: width of the framebuffer
     :param h: height of the framebuffer
     :param x: x-position for display
@@ -748,12 +747,12 @@ def blit_white_only(source_fb, w, h, x, y):
                 oled.pixel(x + col, y + row, 1)  # Set the pixel on the OLED
 
 
-def display_car(celsius, farenheit):
+def display_car(celsius, fahrenheit):
     """
     display_car & temp, Need oled.fill(0) before call & oled.show() after call
 
     :param celsius: temp in C to display
-    :param farenheit: temp in F to display
+    :param fahrenheit: temp in F to display
     """
     if rear:
         oled.blit(FrameBuffer(bitmap_artcar_image_back, 56, 15, MONO_HLSB), 36, 0)
@@ -768,8 +767,8 @@ def display_car(celsius, farenheit):
 
         else:
             oled.blit(FrameBuffer(bitmap_unit_in, 24, 10, MONO_HLSB), 0, 0)
-            if farenheit:
-                oled.text(f"{farenheit:.0f}", 108, 2)
+            if fahrenheit:
+                oled.text(f"{fahrenheit:.0f}", 108, 2)
             else:
                 oled.text("xx", 108, 2)
     else:
@@ -784,8 +783,8 @@ def display_car(celsius, farenheit):
                 oled.text("xx", 108, DISP_HEIGHT - 8)
         else:
             oled.blit(FrameBuffer(bitmap_unit_in, 24, 10, MONO_HLSB), 0, DISP_HEIGHT - 10)
-            if farenheit:
-                oled.text(f"{farenheit:.0f}", 108, DISP_HEIGHT - 8)
+            if fahrenheit:
+                oled.text(f"{fahrenheit:.0f}", 108, DISP_HEIGHT - 8)
             else:
                 oled.text("xx", 108, DISP_HEIGHT - 8)
     return
@@ -989,7 +988,7 @@ print("====================================")
 # roms will be a list of sensors on same GPIO pin
 roms = ds_sensor.scan()
 print('Found DS devices, roms: ', roms)
-# call first time to set up onewire temp, we don't mmeasure temp in this routine
+# call first time to set up onewire temp, we don't measure temp in this routine
 error = outside_temp_ds_init()
 if error:
     print(error)
@@ -1055,7 +1054,7 @@ while True:
         if debug: print("button 2 Interrupt Detected: rear/front")
         rear = not rear  # Toggle between rear /front
 
-    # EVERY 3 SEOCNDS, calc speed of sound based on
+    # EVERY 3 SECONDS, calc speed of sound based on
     # * onewire outside temp
     # * dht22 temp & humidity
     # Note: Temp & humidity correction is for the speed of sound
@@ -1065,11 +1064,11 @@ while True:
     if first_run or elapsed_time > 3000:
         loop_time = time.ticks_ms()
 
-        # check for overtemp onboard pico
+        # check for over temperature onboard pico
         temp = onboard_temperature()
         if temp > OVER_TEMP_WARNING: print(f"WARNING: onboard Pico 2 temp = {temp:.1f}C")
 
-        # Outside temp from waterproof ds sensor, ourside temps not used yet in this code
+        # Outside temp from waterproof ds sensor, outside temps not used yet in this code
         outside_temp_c, error = outside_temp_ds()
         if error:
             print(f"No Outside Temp: {error}")
@@ -1125,7 +1124,7 @@ while True:
     if error:
         print(error)
     else:
-        sensor[1].inch = sensor[i].cm / 2.54
+        sensor[1].inch = sensor[1].cm / 2.54
     ######### Faking IT - code finds pwm ultrasonic in middle, but use UART results instead ##########
 
     if show_env:
