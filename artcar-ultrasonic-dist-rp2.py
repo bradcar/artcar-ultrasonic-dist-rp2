@@ -968,16 +968,24 @@ print(uart1)
 temp = onboard_temperature()
 print(f"onboard Pico 2 temp = {temp:.1f}C")
 print("====================================")
-print(f"Default Speed Sound: {SPEED_SOUND_20C_70H:.1f} m/s\n")
-
 # roms will be a list of sensors on same GPIO pin
 roms = ds_sensor.scan()
-print('Found DS devices: ', roms)
+print('Found DS devices, roms: ', roms)
+# call first time to set up onewire temp, we don't mmeasure temp in this routine
+error = outside_temp_ds_init()
+if error:
+    print(error)
+else:
+    print("Onewire outside temp found")
 
-_, _ = ultrasonic_distance_uart()
-zzz(.5)
-_, error = ultrasonic_distance_uart()
-if not error: print ("UART ultrasonic [1] found")
+# check status of DHT sensor, do not keep any measurements
+_, _, error = dht_temp_humidity()
+if error:
+    oled.text("Error DHT22", 0, 24)
+    oled.text(str(error), 0, 36)
+    oled.show()
+    temp_c = None
+    humidity = None
 
 initialize_flipped_bitmaps()
 
@@ -991,19 +999,6 @@ display_car(None, None)
 oled.show()
 zzz(3)
 
-# call first time to set up onewire temp, we don't mmeasure temp in this routine
-error = outside_temp_ds_init()
-if error: print(error)
-
-# check status of DHT sensor, do not keep any measurements
-_, _, error = dht_temp_humidity()
-if error:
-    oled.text("Error DHT22", 0, 24)
-    oled.text(str(error), 0, 36)
-    oled.show()
-    temp_c = None
-    humidity = None
-
 working_ultrasonics = []
 nonworking_ultrasonics = []
 for i in range(NUMBER_OF_SENSORS):
@@ -1014,7 +1009,15 @@ for i in range(NUMBER_OF_SENSORS):
         working_ultrasonics.append(i)
 print(f"Working PWM Ultrasonic sensors: {working_ultrasonics}")
 print(f"Non-working PWM Ultrasonic sensors: {nonworking_ultrasonics}")
+print(f"Default Speed Sound: {speed_sound:.1f} m/s")
 
+# Check UART Ultrasonics
+_, _ = ultrasonic_distance_uart()
+zzz(.5)
+_, error = ultrasonic_distance_uart()
+if not error: print ("UART ultrasonic [1] found")
+
+print("start of main loop\n")
 # main loop
 first_run = True
 loop_time = time.ticks_ms()
