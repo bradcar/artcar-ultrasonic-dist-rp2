@@ -23,6 +23,7 @@
 #
 # https://micropython.org/download/RPI_PICO2/ for latest .uf2 preview
 # https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
+# pycharm stubs at: https://micropython-stubs.readthedocs.io/en/main/packages.html#mp-packages
 #
 # TODOs
 #  * expand from one a02yyuw waterproof UART sensor to 3
