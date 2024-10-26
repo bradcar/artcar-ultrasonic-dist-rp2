@@ -997,7 +997,6 @@ speed_sound = SPEED_SOUND_20C_70H
 oled.fill(0)
 display_car(None, None)
 oled.show()
-zzz(3)
 
 working_ultrasonics = []
 nonworking_ultrasonics = []
@@ -1017,6 +1016,7 @@ zzz(.5)
 _, error = ultrasonic_distance_uart()
 if not error: print ("UART ultrasonic [1] found")
 
+zzz(3)
 print("start of main loop\n")
 # main loop
 first_run = True
