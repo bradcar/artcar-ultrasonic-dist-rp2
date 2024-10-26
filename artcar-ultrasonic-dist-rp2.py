@@ -487,9 +487,14 @@ def outside_temp_ds_init():
 
 def outside_temp_ds():
     """
-    calc to update speed of sound based on temp & humidity from the DHT22 sensor
-    It is assumed that in setup the function outside_temp_ds_init() is called
-    ...or... that outside_temp_ds() has been called before
+    Get the outside temp DS sensor
+    Because we must call ds_sensor.convert_temp() at least 750ms before read data,
+    we will call outside_temp_ds_init() in setup (it wraps this function)
+    
+    Notice at the end of this function we call ds_sensor.convert_temp() in order to
+    have enough time before we read again.
+    We ONLY call this function once every 3 seconds, which means there will
+    always be at least 3 seconds between ds_sensor.convert_temp() and ds_sensor.read_temp(rom)
 
     :returns: temp Celsius & error string
     """
@@ -582,7 +587,7 @@ def ultrasonic_distance_uart():
      - RX pin controls the data output.
        - HIGH or not connected (internal pulled up) then results every 300ms.
        - RX pin held LOW then results every 100ms. (less accurate)
-       - TODO: find out what connector type is
+       - JST PH 4-pin used by A02YYUW
     JSN-SR04T: +/1 1.0mc, 20cm to 600cm, $10,
      - Mode 0(default): must measure, use ultrasonic_distance_pwm() code instead
      - Mode 1: outputs serial data UART, measurement every 200ms. You read the data on the Echo pin
@@ -590,11 +595,7 @@ def ultrasonic_distance_uart():
     https://dronebotworkshop.com/waterproof-ultrasonic/
     https://www.amazon.com/Ultrasonic-Distance-Controlled-Detector-Waterproof/dp/B0CFFTS71Y/
 
-    TODO:
-    * need RS-485 twisted pair Data Serial Bulk Cable: 24 AWG
-    * PH2.0-4P Connector x1 used by A02YYUW
-
-    :returns: cm distance and ...
+    :returns: cm distance and error string
     """
     # REQUIRED write !!!! to get uart1 to send data, two writes then delay not needed
     uart1.write(b'\xff')
