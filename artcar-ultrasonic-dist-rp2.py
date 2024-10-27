@@ -41,6 +41,7 @@ import machine
 import onewire
 import utime
 # import RPi.GPIO as GPIO
+import rp2
 from framebuf import FrameBuffer, MONO_HLSB
 from machine import Pin
 # ic2
@@ -115,6 +116,7 @@ for i in range(len(sensor)):
 uart1 = machine.UART(1, 9600, tx=Pin(20), rx=Pin(21))
 led = Pin(25, Pin.OUT)
 ds_pin = machine.Pin(28)
+buzzer = Pin(27, Pin.OUT)
 
 dht_sensor = dht.DHT22(dht_pin)
 ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
@@ -445,6 +447,37 @@ def get_str_width(text):
     return len(text)
 
 
+def onboard_temperature():
+    """
+    # pico data pico 2 rp2350 data sheet on page 1068
+    # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree
+    """
+    adc_value = on_pico_temp.read_u16()
+    volt = (3.3 / 65535) * adc_value
+    celsius = 27 - (volt - 0.706) / 0.001721
+    if debug: print(f"on chip temp = {celsius:.3f}C")
+    return celsius
+
+
+def dht_temp_humidity():
+    """
+    read temp & humidity from the DHT22 sensor
+
+    :returns: celsius, percent_humidity, error string
+    """
+    try:
+        dht_sensor.measure()
+        celsius = dht_sensor.temperature()
+        percent_humidity = dht_sensor.humidity()
+        if debug:
+            print(f"DHT Temp °C : {temp_c:.2f}")
+            print(f"DHT Temp °F : {temp_f:.2f}")
+            print(f"DHT Humidity: {humidity:.2f}%")
+    except Exception as e:
+        return None, None, "ERROR_TEMP_HUMID:" + str(e)
+    return celsius, percent_humidity, None
+
+
 def outside_temp_ds_init():
     """
     init onewire, this is special code for this use we are only asking outside temp
@@ -517,25 +550,6 @@ def calc_speed_sound(celsius, percent_humidity):
         return meter_per_sec, None
     else:
         return None, f"ERROR_INVALID_SOUND_SPEED:temp={celsius},humidity={percent_humidity}"
-
-
-def dht_temp_humidity():
-    """
-    read temp & humidity from the DHT22 sensor
-
-    :returns: celsius, percent_humidity, error string
-    """
-    try:
-        dht_sensor.measure()
-        celsius = dht_sensor.temperature()
-        percent_humidity = dht_sensor.humidity()
-        if debug:
-            print(f"DHT Temp °C : {temp_c:.2f}")
-            print(f"DHT Temp °F : {temp_f:.2f}")
-            print(f"DHT Humidity: {humidity:.2f}%")
-    except Exception as e:
-        return None, None, "ERROR_TEMP_HUMID:" + str(e)
-    return celsius, percent_humidity, None
 
 
 def calculate_checksum(data_buffer):
@@ -641,42 +655,6 @@ def ultrasonic_distance_pwm(j, speed_of_sound, timeout=50000):
     # Calculate cm distance
     distance_in_cm = utime.ticks_diff(signal_on, signal_off) * (speed_of_sound / 20000.0)
     return distance_in_cm, None
-
-
-def display_environment(dist):
-    """
-    display just environment readings & car image(for fun)
-    No need to oled.fill(0) before or oled.show() after call
-
-    param:dist:  distance if dist = -1.0 then display error
-    """
-    oled.fill(0)
-    if temp_c:
-        if metric:
-            oled.text(f"Temp = {temp_c:.1f}C", 0, 0)
-        else:
-            oled.text(f"Temp = {temp_f:.1f}F", 0, 0)
-        if humidity: oled.text(f"Humid= {humidity:.1f}%", 0, 12)
-    else:
-        oled.text(f"No Temp/Humidity", 0, 10)
-        oled.text(f" Sensor Working", 0, 20)
-
-    if metric:
-        oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
-        if dist:
-            oled.text(f"Dist= {dist:.0f}cm", 0, 55)
-        else:
-            oled.text(f"No ultrasonic", 0, 55)
-    else:
-        oled.text(f"Sound={speed_sound * 3.28084:.0f}ft/s", 0, 24)
-        if dist:
-            oled.text(f"Dist= {dist / 2.54:.1f}in", 0, 55)
-        else:
-            oled.text(f"No ultrasonic", 0, 55)
-
-    oled.blit(FrameBuffer(bitmap_artcar_image_back, 56, 15, MONO_HLSB), 22, 36)
-    oled.show()
-    return
 
 
 def flip_bitmap_vert(bitmap, width, height):
@@ -940,21 +918,51 @@ def display_tiles_dist():
     return
 
 
-def onboard_temperature():
+def display_environment(dist, buzz):
     """
-    # pico data pico 2 rp2350 data sheet on page 1068
-    # data sheet says 27C  is 0.706v, with a slope of -1.721mV per degree
+    display just environment readings & car image(for fun)
+    No need to oled.fill(0) before or oled.show() after call
+
+    param:dist:  distance if dist = -1.0 then display error
+    param:buzz:  distance if dist = -1.0 then display error
     """
-    adc_value = on_pico_temp.read_u16()
-    volt = (3.3 / 65535) * adc_value
-    celsius = 27 - (volt - 0.706) / 0.001721
-    if debug: print(f"on chip temp = {celsius:.3f}C")
-    return celsius
+    oled.fill(0)
+    if dist < 120.0 and buzz:
+        buzzer.on()
+    elif buzz:
+        buzzer.off()
+    if temp_c:
+        if metric:
+            oled.text(f"Temp = {temp_c:.1f}C", 0, 0)
+        else:
+            oled.text(f"Temp = {temp_f:.1f}F", 0, 0)
+        if humidity: oled.text(f"Humid= {humidity:.1f}%", 0, 12)
+    else:
+        oled.text(f"No Temp/Humidity", 0, 10)
+        oled.text(f" Sensor Working", 0, 20)
+
+    if metric:
+        oled.text(f"Sound={speed_sound:.1f}m/s", 0, 24)
+        if dist:
+            oled.text(f"Dist= {dist:.0f}cm", 0, 55)
+        else:
+            oled.text(f"No ultrasonic", 0, 55)
+    else:
+        oled.text(f"Sound={speed_sound * 3.28084:.0f}ft/s", 0, 24)
+        if dist:
+            oled.text(f"Dist= {dist / 2.54:.1f}in", 0, 55)
+        else:
+            oled.text(f"No ultrasonic", 0, 55)
+
+    oled.blit(FrameBuffer(bitmap_artcar_image_back, 56, 15, MONO_HLSB), 22, 36)
+    oled.show()
+    return
 
 
 # =========================  startup code =========================
 rear = True
 show_env = True
+buzzer_sound = True
 metric = False
 dht_error = False
 ds_error = False
@@ -1044,7 +1052,10 @@ if not error: print("UART ultrasonic [1] found")
 
 initialize_flipped_bitmaps()
 
+if buzzer_sound: buzzer.on()
 zzz(3)
+buzzer.off()
+
 print("start of main loop\n")
 # main loop
 first_run = True
@@ -1144,7 +1155,7 @@ try:
 
         if show_env:
             # pick first working ultrasonic to show
-            display_environment(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0)
+            display_environment(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0, buzzer_sound)
         else:
             oled.fill(0)
             display_car(temp_c, temp_f)
