@@ -9,8 +9,8 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * DHT22 - for temp & humidity
 * DS18B20 - waterproof outdoor temp that uses onewire protocol
-* HC-SR04, JSN-SR04T A02YYUW (PWM)- 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances)
-* Temperature from on-RP2350 (no external pins, machine.ADC(4), no sensor needed
+* A02YYUW (PWM), HC-SR04, JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances), A02YYUW see best waterproofing and accuracy.
+* Temperature from on-board RP2350 (no external pins, machine.ADC(4))
 * ...Considering BME280 to capture inside temp, humidity, air pressure. and altitude.
 
 Reconsidering A02YYUW UART sensors - currently in the "sensor-tests" directory. 
