@@ -5,18 +5,22 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 
 ## Features of this Raspberry Pi Pico 2 code:
 * SSD1309 - uses SSD1306 sw, both SDI & I2C code - SDI is faster
-  * ssd1306 Framebuffer-based SW for print & blit of bitmap images
+  * ssd1306 Framebuffer-based SW for printing text & blit of bitmap images
 * button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * DHT22 - for temp & humidity
 * DS18B20 - waterproof outdoor temp that uses onewire protocol
-* HC-SR04 or JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances)
+* HC-SR04, JSN-SR04T A02YYUW (PWM)- 1x to 3x Ultrasonic sensors are polled for distances (PWM - times devices for distances)
 * Temperature from on-RP2350 (no external pins, machine.ADC(4), no sensor needed
-* A02YYUW: 1x Ultrasonic UART sensors (TODO: Integrate into art car project, currently in the "sensor-tests" directory)
-  * in order to get 3 UART ultrasonic sensors on one Pico,
+* ...Considering BME280 to capture inside temp, humidity, air pressure. and altitude.
+
+Reconsidering A02YYUW UART sensors - currently in the "sensor-tests" directory. 
+  * Now unlikely to use due to these possible downsides:
+    * They are continuously broadcasting ultrasonic pings, I think three sensors may interfere with one another's reception
+    * in order to get 3 UART ultrasonic sensors on one Pico, one needs extra HW/SW: 
     * HW for dual-UART-to-SDI: https://www.amazon.com/JESSINIE-SC16IS752-Adapter-Conversion-Communication/dp/B0BBLV98ZP/
     * SW for UART-to-SDI: https://github.com/rickkas7/SC16IS7xxRK
  
-## Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
+## My code is Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
 * UPIR youtube channel: https://www.youtube.com/upir_upir
 * UPIR youtube full video: https://youtu.be/gg08H-6Z1Lo
 * UPIR Github: https://github.com/upiir/arduino_parking_sensor
