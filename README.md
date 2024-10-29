@@ -47,13 +47,13 @@ Environment display (Imperial units: inches, ft/s, F)
 
 ![Car display for Environment Imperial Units](imgs/env-display-imperial.jpg)
 
-## Other useful sites (but not used in this code):
-* MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
-
 ## Temp and Humidity Correction
 Temp correction for the speed of sound improves accuracty. The humidity correction is minor, but I had a DHT22 which does both, so why not :)
 * speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
 * speed of sound at going from 10% to 90% humidity at 30C goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
+
+## Other useful sites (but not used in this code):
+* MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
 
 ## Ideas no longer considering
 I decided not to use A02YYUW UART sensors (A0221AT), but to use A02YYUW PWM(#) instead.  The test code for the UART version i in the "sensor-tests" directory for others that may be interested. 
