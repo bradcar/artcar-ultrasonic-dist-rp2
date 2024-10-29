@@ -285,7 +285,7 @@ def display_environment(dist, buzz):
     param:buzz:  flag if should have distance warning sound
     """
     oled.fill(0)
-    if dist < 120.0 and buzz:
+    if dist < 69.0 and buzz:
         buzzer.on()
     elif buzz:
         buzzer.off()
@@ -480,7 +480,9 @@ try:
 except KeyboardInterrupt:
     oled.fill(0)  # turn off oled
     oled.show()  # show on oled
+    buzzer.off()
     print("Exit: ctrl-c")
-# except:
-#     print ("Other error or exception occurred!")
+except:
+    buzzer.off()
+    print ("Other error or exception occurred!")
 
