@@ -51,13 +51,13 @@ Environment display (Imperial units: inches, ft/s, F)
 * MicroPython Fonts:  https://github.com/peterhinch/micropython-font-to-py/tree/master -- Didn't use it for this project
 
 ## Temp and Humidity Correction
-Temp correction for the speed of sound is helpful, & humidity correction is minor, but I had a DHT22 which does both, so why not :)
+Temp correction for the speed of sound improves accuracty. The humidity correction is minor, but I had a DHT22 which does both, so why not :)
 * speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
 * speed of sound at 30C goes with a humidity of 0% to 90% goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
 
 ## Ideas no longer considering
-I decided not to use A02YYUW UART sensors, but to use A02YYUW PWM.  The test code for the UART version is currently in the "sensor-tests" directory in order to help others. 
+I decided not to use A02YYUW UART sensors, but to use A02YYUW PWM instead.  The test code for the UART version is currently in the "sensor-tests" directory in order to help others. 
 * Because the UART versions are always broadcasting ultrasonic pings, they seem to interfere with one another if in close proximity  when only a few feet apart.
-* Raspberry Pi Pico 2 only offers two UARTs and one is used for communication to a laptop (when needed). In order to get 3 UART ultrasonic sensors on one Pico, one needs extra HW/SW: 
+* Raspberry Pi Pico 2 only offers two UARTs and I use UART0 for communication to a laptop (when needed). In order to get 3 UART ultrasonic sensors on one Pico, one needs extra HW/SW: 
   * HW for dual-UART-to-SDI: https://www.amazon.com/JESSINIE-SC16IS752-Adapter-Conversion-Communication/dp/B0BBLV98ZP/
   * SW for UART-to-SDI: https://github.com/rickkas7/SC16IS7xxRK
