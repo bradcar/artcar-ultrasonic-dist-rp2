@@ -9,9 +9,9 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * A02YYUW (PWM), HC-SR04, JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances, using PWM which only sends one ping from one sensor at a time and then measures the return time.
   * Picked A02YYUW since it has the best waterproofing and accuracy.
 * DS18B20 - waterproof outdoor temp that uses onewire protocol
-* DHT22 - for inside vent temp & humidity
-  * Considering BME280 to capture inside temp, humidity, air pressure. and altitude.
-* button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
+* DHT22 - for inside outside vent intake for temp & humidity
+  * Considering using BME280 (3.3v) for inside temp, humidity, air pressure, and altitude.
+* button debounce that uses efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * Temperature from on-board RP2350 (no external pins, ADC4)
  
 ## My code is Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
@@ -53,11 +53,11 @@ Environment display (Imperial units: inches, ft/s, F)
 ## Temp and Humidity Correction
 Temp correction for the speed of sound improves accuracty. The humidity correction is minor, but I had a DHT22 which does both, so why not :)
 * speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
-* speed of sound at 30C goes with a humidity of 0% to 90% goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
+* speed of sound at going from 10% to 90% humidity at 30C goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
 
 ## Ideas no longer considering
-I decided not to use A02YYUW UART sensors, but to use A02YYUW PWM instead.  The test code for the UART version is currently in the "sensor-tests" directory in order to help others. 
-* Because the UART versions are always broadcasting ultrasonic pings, they seem to interfere with one another if in close proximity  when only a few feet apart.
-* Raspberry Pi Pico 2 only offers two UARTs and I use UART0 for communication to a laptop (when needed). In order to get 3 UART ultrasonic sensors on one Pico, one needs extra HW/SW: 
+I decided not to use A02YYUW UART sensors (A0221AT), but to use A02YYUW PWM(#) instead.  The test code for the UART version i in the "sensor-tests" directory for others that may be interested. 
+* Because the UART versions are always broadcasting ultrasonic pings, they seem to interfere with one another when in close proximity (inches to feet apart).
+* Raspberry Pi Pico 2 only offers two dedicated UARTs and I use UART0 for communication to a laptop (when needed). In order to get 3 UART ultrasonic sensors on one Pico, one needs extra HW/SW: 
   * HW for dual-UART-to-SDI: https://www.amazon.com/JESSINIE-SC16IS752-Adapter-Conversion-Communication/dp/B0BBLV98ZP/
   * SW for UART-to-SDI: https://github.com/rickkas7/SC16IS7xxRK
