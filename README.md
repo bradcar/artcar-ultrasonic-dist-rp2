@@ -6,13 +6,13 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 ## Features of this Raspberry Pi Pico 2 code:
 * SSD1309 - uses SSD1306 sw, both SDI & I2C code - SDI is faster
   * ssd1306 Framebuffer-based SW for printing text & blit of bitmap images
-* button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
-* DHT22 - for temp & humidity
-  * Considering BME280 to capture inside temp, humidity, air pressure. and altitude.
-* DS18B20 - waterproof outdoor temp that uses onewire protocol
 * A02YYUW (PWM), HC-SR04, JSN-SR04T - 1x to 3x Ultrasonic sensors are polled for distances, using PWM which only sends one ping from one sensor at a time and then measures the return time.
   * Picked A02YYUW since it has the best waterproofing and accuracy.
-* Temperature from on-board RP2350 (no external pins, machine.ADC(4))
+* DS18B20 - waterproof outdoor temp that uses onewire protocol
+* DHT22 - for inside vent temp & humidity
+  * Considering BME280 to capture inside temp, humidity, air pressure. and altitude.
+* button debounce using efficient interrupt code (does not use CPU cycles with sleep, yay!)
+* Temperature from on-board RP2350 (no external pins, ADC4)
  
 ## My code is Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
 * UPIR youtube channel: https://www.youtube.com/upir_upir
