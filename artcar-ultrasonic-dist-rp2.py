@@ -27,7 +27,6 @@
 #   : https://micropython-stubs.readthedocs.io/en/main/packages.html#mp-packages
 #
 # TODOs
-#  * expand from one a02yyuw waterproof UART sensor to 3, or switch to a02yyuw PWM
 #  * add button #3 for switching between showing car on oled or
 
 import time
@@ -42,7 +41,6 @@ import machine
 import onewire
 import utime
 # import RPi.GPIO as GPIO
-import rp2
 from framebuf import FrameBuffer, MONO_HLSB
 from machine import Pin
 # ic2
@@ -462,7 +460,7 @@ def onboard_temperature():
 
 def dht_temp_humidity():
     """
-    read temp & humidity from the DHT22 sensor, , measurement takes ~271ms
+    read temp & humidity from the DHT22 sensor, measurement takes ~271ms
 
     :returns: celsius, percent_humidity, error string
     """
@@ -551,7 +549,7 @@ def calc_speed_sound(celsius, percent_humidity):
                         + (0.001057 * percent_humidity + 0.07121)
         return meter_per_sec, None
     else:
-        return None, f"ERROR_INVALID_SOUND_SPEED:temp={celsius},humidity={percent_humidity}"
+        return None, f"ERROR_INVALID_SOUND_SPEED:temp={celsius}C,humidity={percent_humidity}%"
 
 
 def calculate_checksum(data_buffer):
@@ -596,7 +594,8 @@ def ultrasonic_distance_pwm(j, speed_of_sound, timeout=50000):
     signal_on = utime.ticks_us()
 
     # Calculate cm distance
-    distance_in_cm = utime.ticks_diff(signal_on, signal_off) * (speed_of_sound / 20000.0)
+    distance_in_cm = utime.ticks_diff(signal_on, signal_off) \
+                     * (speed_of_sound / 20000.0)
     return distance_in_cm, None
 
 
