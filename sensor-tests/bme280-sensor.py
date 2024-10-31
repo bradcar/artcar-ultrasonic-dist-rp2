@@ -13,15 +13,43 @@
 from machine import Pin, I2C
 from time import sleep
 import BME280
+# from bme680 import *
 
 # Initialize I2C communication
 i2c = I2C(id=1,  sda=Pin(26), scl=Pin(27), freq=10000)
 
+debug = False
 
 def calc_sea_level_pressure(hpa, meters):
     sea_level_pressure_hpa = hpa / (1.0 - (meters / 44330.0)) ** 5.255
 
     return sea_level_pressure_hpa
+
+def bme_temp_humidity_altitude(sea_level):
+    """
+    read temp & humidity from the DHT22 sensor, measurement takes ~271ms
+    
+    :param :sea_level: sea level
+    :returns: celsius, percent_humidity, error string
+    """
+    # Read sensor data
+    try:    
+        temp_c = bme.temperature
+        percent_humidity = bme.humidity
+        hpa_pressure = bme.pressure
+        meters = 44330.0 * (1.0 - (hpa_pressure/sea_level)**(1.0/5.255) )
+        if debug:
+            print(f"BME Temp °C : {temp_c:.2f}")
+            print(f"BME Humidity: {percent_humidity:.2f}%")
+            print(f"BME Pressure: {hpa_pressure:.2f}hPA")
+            
+    except Exception as e:
+        return None, None, None, None, "ERROR_BME:" + str(e)
+    return temp_c, percent_humidity, hpa_pressure, meters, None
+
+# Initialize BME280 sensor
+bme = BME280.BME280(i2c=i2c)
+# bme = BME680_IC2(i2c=i2c)
 
 
 while True:
@@ -30,21 +58,15 @@ while True:
         # https://community.bosch-sensortec.com/t5/Question-and-answers/How-to-calculate-the-altitude-from-the-pressure-sensor-data/qaq-p/5702
         # https://www.weather.gov/wrh/timeseries?site=KPDX
         # hPa = mB
-        sea_level_pressure_hpa = 1013.20
-        
-        # Initialize BME280 sensor
-        bme = BME280.BME280(i2c=i2c)
+        sea_level_pressure_hpa = 1012.90
         
         # Read sensor data
-        temperature_c = bme.temperature
-        humidity = bme.humidity
-        pressure_hpa = bme.pressure        
+        temperature_c, humidity, pressure_hpa, altitude_m, _ = bme_temp_humidity_altitude(sea_level_pressure_hpa)        
         
         # Convert temperature to Fahrenheit
         temperature_f = temperature_c * (9.0/5.0) + 32.0
         
         # calculate altitude
-        altitude_m = 44330.0 * (1.0 - (pressure_hpa/sea_level_pressure_hpa)**(1.0/5.255) )
         altitude_f = altitude_m * 3.28084
         
         # Print sensor readings
@@ -58,7 +80,7 @@ while True:
         
         # from the Altitude, calc sea level pressure
         predict_slp = calc_sea_level_pressure(pressure_hpa, altitude_m)
-        print(f"Sea Level Pressure= {predict_slp:.1f} hPa\n")
+        print(f"Predict Sea Level pressure = {predict_slp:.1f} hPa\n")
         
     except Exception as e:
         # Handle any exceptions during sensor reading
