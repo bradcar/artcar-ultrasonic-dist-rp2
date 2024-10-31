@@ -35,14 +35,17 @@ from os import uname
 from sys import implementation
 from time import sleep as zzz
 
-import dht
+from bme680 import *
+from math import log
+
+# import dht
 import ds18x20
 import machine
 import onewire
 import utime
 # import RPi.GPIO as GPIO
 from framebuf import FrameBuffer, MONO_HLSB
-from machine import Pin
+from machine import Pin, I2C
 # ic2
 # from machine import I2C
 # from ssd1306 import SSD1306_I2C
@@ -75,9 +78,11 @@ on_pico_temp = machine.ADC(4)
 
 # external pins
 uart0 = machine.UART(0, 115200, tx=Pin(0), rx=Pin(1))
-dht_pin = machine.Pin(2)
-button_1 = Pin(5, Pin.IN, Pin.PULL_UP)  # interrupt cm/in button pins
-button_2 = Pin(6, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
+# dht_pin = machine.Pin(2)
+button_1 = Pin(2, Pin.IN, Pin.PULL_UP)  # interrupt cm/in button pins
+button_2 = Pin(3, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
+button_3 = Pin(4, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
+buzzer = Pin(5, Pin.OUT)
 
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
 # i2c=I2C(0,sda=Pin(12), scl=Pin(13), freq=400000)
@@ -112,12 +117,13 @@ for i in range(len(sensor)):
     trigger.append(trigger_pin)
     echo.append(echo_pin)
 
-uart1 = machine.UART(1, 9600, tx=Pin(20), rx=Pin(21))
 led = Pin(25, Pin.OUT)
+# Pin assignment  i2c1 
+i2c = I2C(id=1, scl=Pin(27), sda=Pin(26))
 ds_pin = machine.Pin(28)
-buzzer = Pin(27, Pin.OUT)
 
-dht_sensor = dht.DHT22(dht_pin)
+bme = BME680_I2C(i2c=i2c)
+
 ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
 oled_spi = machine.SPI(1)
 # print(f"oled_spi:{oled_spi}")
@@ -367,6 +373,7 @@ MIN_CM_DIST = 2.0  # cm min for tiles
 MAX_CM_DIST = 100.0  # cm max where text stops moving for tiles
 DWELL_MS_LOOP = 100
 SPEED_SOUND_20C_70H = 343.294
+PDX_SLP_1013 = 1013.1
 OVER_TEMP_WARNING = 70.0
 
 # Button debouncer with efficient interrupts, which don't take CPU cycles!
@@ -458,23 +465,56 @@ def onboard_temperature():
     return celsius
 
 
-def dht_temp_humidity():
+def calc_sea_level_pressure(hpa, meters):
     """
-    read temp & humidity from the DHT22 sensor, measurement takes ~271ms
+    Calculate the sea level pressure from the hpa pressure at a known elevation
+    
+    :param :sea_level: sea level hpa from closest airport
+    :returns: sea level hpa based on known altitude
+    """
+    sea_level_pressure_hpa = hpa / (1.0 - (meters / 44330.0)) ** 5.255
 
-    :returns: celsius, percent_humidity, error string
+    return sea_level_pressure_hpa
+
+
+def bme_temp_humid_hpa_iaq_alt(sea_level):
     """
-    try:
-        dht_sensor.measure()
-        celsius = dht_sensor.temperature()
-        percent_humidity = dht_sensor.humidity()
+    read temp, humidity, pressure, Indoor Air Qualtiy (IAQ) from the BME680 sensor
+    measurement takes ~189ms
+     IAQ:       0- 50 good
+               51-100 average
+              101-150 poor
+              151-200 bad
+              201-300 worse
+              301-500 very bad
+    
+    :param :sea_level: sea level hpa from closest airport
+    :returns: temp_c, percent_humidity, hpa_pressure, iaq, meters, error string
+    """
+    # Read sensor data
+    debug = True
+    try:    
+        temp_c = bme.temperature
+        percent_humidity = bme.humidity
+        hpa_pressure = bme.pressure
+        gas_resist = bme.gas/100
+        
+        # derived sensor data
+        meters = 44330.0 * (1.0 - (hpa_pressure/sea_level)**(1.0/5.255) )
+        iaq = log(gas_resist) + 0.04 * percent_humidity
+        
         if debug:
-            print(f"DHT Temp °C : {temp_c:.2f}")
-            print(f"DHT Temp °F : {temp_f:.2f}")
-            print(f"DHT Humidity: {humidity:.2f}%")
-    except Exception as e:
-        return None, None, "ERROR_TEMP_HUMID:" + str(e)
-    return celsius, percent_humidity, None
+            print(f"BME680 Temp °C = {temp_c:.2f} C")
+            print(f"BME680 Humidity = {percent_humidity:.2f} %")
+            print(f"BME680 Pressure = {hpa_pressure:.2f} hPA")
+            print(f"BME680 iaq = {iaq:.2f} IAQ lower better")
+            print(f"BME680 Alt = {meters * 3.28084:.2f} feet \n")
+            
+    except OSError as e:
+        print("BME680: Failed to read sensor.")
+        return None, None, None, None, None, "ERROR_BME680:" + str(e)
+    
+    return temp_c, percent_humidity, hpa_pressure, iaq, meters, None
 
 
 def outside_temp_ds_init():
@@ -938,6 +978,7 @@ debounce_1_time = 0
 debounce_2_time = 0
 
 speed_sound = SPEED_SOUND_20C_70H
+sea_level_pressure_hpa = PDX_SLP_1013
 temp_f = None
 temp_c = None
 humidity = None
@@ -946,7 +987,6 @@ print("Starting...")
 print("====================================")
 print(implementation[0], uname()[3],
       "\nrun on", uname()[4])
-print(uart1)
 temp = onboard_temperature()
 print(f"onboard Pico 2 temp = {temp:.1f}C")
 print("====================================")
@@ -963,14 +1003,14 @@ if error:
 else:
     print("Onewire outside temp found")
 
-# check status of DHT sensor, do not keep any measurements
-_, _, error = dht_temp_humidity()
-if error:
-    oled.text("Error DHT22", 0, 24)
-    oled.text(str(error), 0, 36)
-    oled.show()
-    temp_c = None
-    humidity = None
+# # check status of DHT sensor, do not keep any measurements
+# _, _, error = dht_temp_humidity()
+# if error:
+#     oled.text("Error DHT22", 0, 24)
+#     oled.text(str(error), 0, 36)
+#     oled.show()
+#     temp_c = None
+#     humidity = None
 
 # at start display artcar image at top of oled
 oled.fill(0)
@@ -1045,11 +1085,13 @@ try:
             
             start = time.ticks_ms()
             # Inside Temp & humidity dht sensor
-            inside_temp_c, humidity, error = dht_temp_humidity()
+#             inside_temp_c, humidity, error = dht_temp_humidity()
+            inside_temp_c, humidity, pressure_hpa, iaq, altitude_m, _ = bme_temp_humid_hpa_iaq_alt(sea_level_pressure_hpa)        
             if error:
                 print(f"No Inside Temp: {error}")
             else:
                 if debug: print(f"Inside temp C = {inside_temp_c:.2f}")
+
             elapsed_time = time.ticks_diff(time.ticks_ms(), start)
             print(f"inside temp time = {elapsed_time}\n")
 
