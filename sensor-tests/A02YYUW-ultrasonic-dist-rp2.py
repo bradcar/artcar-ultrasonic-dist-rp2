@@ -318,7 +318,7 @@ def display_environment(dist, buzz):
 
 
 # =========================  startup code =========================
-buzzer_sound = True
+buzzer_sound = False
 metric = False
 dht_error = False
 ds_error = False
