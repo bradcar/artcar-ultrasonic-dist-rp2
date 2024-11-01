@@ -1,6 +1,6 @@
-# Raspberry Pi Pico 2 project - A02YYUW UART ultrasonic - Oct 2024
+# Raspberry Pi Pico 2 project - A02YYTW/A02YYUW UART ultrasonic - Oct 2024
 #
-# Uses 3 ultrasonic sensors, uses oled SPI display to show measured
+# Uses 1 ultrasonic sensor, uses oled SPI display to show measured
 # temp & humid and uses them to calculate speeed of sound for accurate
 # distance measurement.
 #
@@ -19,9 +19,6 @@
 # https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
 # pycharm stubs at: https://micropython-stubs.readthedocs.io/en/main/packages.html#mp-packages
 #
-# TODOs
-#  * expand from one a02yyuw waterproof UART sensor to 3, or switch to a02yyuw PWM
-#  * add button #3 for switching between showing car on oled or
 
 import time
 from math import sqrt
@@ -245,7 +242,8 @@ def ultrasonic_distance_uart():
 
     :returns: cm distance and error string
     """
-    # REQUIRED write !!!! to get uart1 to send data, two writes then delay not needed
+    # I believe you remove the code for the two "uart1.write" below for A02YYUW
+    # REQUIRED write for A02YYTW to get uart1 to send data bacl, two writes then delay not needed
     uart1.write(b'\xff')
     uart1.write(b'\xff')
     #    time.sleep_ms(100)  # Small delay to ensure complete data packet reception
