@@ -30,13 +30,12 @@
 #  * add button #3 for switching between showing car on oled or
 
 import time
-from math import sqrt
+from math import sqrt, log
 from os import uname
 from sys import implementation
 from time import sleep as zzz
 
 from bme680 import *
-from math import log
 
 # import dht
 import ds18x20
@@ -373,7 +372,7 @@ MIN_CM_DIST = 2.0  # cm min for tiles
 MAX_CM_DIST = 100.0  # cm max where text stops moving for tiles
 DWELL_MS_LOOP = 100
 SPEED_SOUND_20C_70H = 343.294
-PDX_SLP_1013 = 1013.1
+PDX_SLP_1013 = 1011.00
 OVER_TEMP_WARNING = 70.0
 
 # Button debouncer with efficient interrupts, which don't take CPU cycles!
@@ -505,9 +504,9 @@ def bme_temp_humid_hpa_iaq_alt(sea_level):
         
         if debug:
             print(f"BME680 Temp °C = {temp_c:.2f} C")
-            print(f"BME680 Humidity = {percent_humidity:.2f} %")
+            print(f"BME680 Humidity = {percent_humidity:.1f} %")
             print(f"BME680 Pressure = {hpa_pressure:.2f} hPA")
-            print(f"BME680 iaq = {iaq:.2f} IAQ lower better")
+            print(f"BME680 iaq = {iaq:.1f} IAQ lower better")
             print(f"BME680 Alt = {meters * 3.28084:.2f} feet \n")
             
     except OSError as e:
