@@ -4,10 +4,10 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * To see my Art Car, 5th image down on https://en.wikipedia.org/wiki/Art_car, the one with the caption: "Unofficial BMW Art Car by Tom Cramer..."
 
 ## Features of this Raspberry Pi Pico 2 code:
-* SSD1309 - uses SSD1306 sw, both SDI & I2C code - SDI is faster
+* SSD1309 (SDI) - uses SSD1306 sw, both SDI & I2C code - SDI is faster
   * ssd1306 Framebuffer-based SW for printing text & blit of bitmap images
 * A02YYMW (PWM, A0221AM) - 1x to 3x Ultrasonic sensors are polled for distances, using PWM which only sends one ping from one sensor at a time and then measures the return time.
-* DS18B20 - waterproof outdoor temp that uses onewire protocol, singlewire
+* DS18B20 (onewire) - waterproof outdoor temp that uses onewire protocol, singlewire
 * BME680 (I2C) - for inside temp & humidity, air pressure, air quality, and altitude.
   * will place inside outside air input to vent to protect from the weather, in case external temp sensor has issues
 * button debounce that uses efficient interrupt code (does not use CPU cycles with sleep, yay!)
