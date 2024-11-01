@@ -77,6 +77,7 @@ while True:
     
     oled.blit(FrameBuffer(bitmap_artcar_image_back,56,15, MONO_HLSB), 16, 9)
     
+    # fill_rect(x, y, w, h, color)
     oled.fill_rect(2, 24, 80, 38, 1)
     oled.fill_rect(78, 26, 2, 24, 0)
 
