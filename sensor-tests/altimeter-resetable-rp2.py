@@ -26,20 +26,18 @@
 #
 # TODOs
 #  * add button #3 for ???
-
 import time
+import utime
+
+from machine import Pin, I2C
 from os import uname
 from sys import implementation, stdin
 from time import sleep as zzz
-
-from bme680 import *
 from math import log
 
-import machine
-import utime
-
+from bme680 import BME680_I2C
 from framebuf import FrameBuffer, MONO_HLSB
-from machine import Pin, I2C
+
 # ic2
 # from machine import I2C
 # from ssd1306 import SSD1306_I2C
@@ -117,7 +115,7 @@ degree_temp = bytearray([
     0x00,0x00,0x80,0x00,0x01,0x80,0x00,0x01,0x80,0x00,0x01,0xf0,0x00,0x0f
 ])
 DWELL_MS_LOOP = 100
-PDX_SLP_1013 = 1011.00
+PDX_SLP_1013 = 1009.90
 OVER_TEMP_WARNING = 70.0
 
 # Button debouncer with efficient interrupts, which don't take CPU cycles!
@@ -161,6 +159,26 @@ def onboard_temperature():
     if debug: print(f"on chip temp = {celsius:.3f}C")
     return celsius
 
+def iaq_quality(iaq_rating):
+    """
+    Calculate text to append to IAQ numerical rating
+     IAQ: (0- 50 low, 51-100 ave, 101-150 poor, 151-200 bad, 201-300 VBad, 301-500 danger)
+
+    :param :iaq_rating: the rating to score
+    :returns: string to add context to the number
+    """
+    if iaq_rating < 50:
+        return "low"
+    elif iaq_rating < 100:
+        return "ave"
+    elif iaq_rating < 150:
+        return "poor"
+    elif iaq_rating < 200:
+        return "bad"
+    elif iaq_rating < 300:
+        return "V Bad"
+    else:
+        return "DANGER"
 
 def calc_sea_level_pressure(hpa, meters):
     """
@@ -174,16 +192,23 @@ def calc_sea_level_pressure(hpa, meters):
     return sea_level_pressure_hpa
 
 
+def calc_altitude(hpa, slp):
+    """
+    Calculate the Altitude from sea level pressure and hpa pressure 
+    
+    :param :sea_level: sea level hpa from closest airport
+    :returns: sea level hpa based on known altitude
+    """
+    meters = 44330.0 * (1.0 - (hpa/slp)**(1.0/5.255) )
+    return meters
+
+
 def bme_temp_humid_hpa_iaq_alt(sea_level):
     """
     read temp, humidity, pressure, Indoor Air Qualtiy (IAQ) from the BME680 sensor
     measurement takes ~189ms
-     IAQ:       0- 50 good
-               51-100 average
-              101-150 poor
-              151-200 bad
-              201-300 worse
-              301-500 very bad
+    function iaq_quality(iaq) will show the textual scale
+     IAQ: (0- 50 low, 51-100 ave, 101-150 poor, 151-200 bad, 201-300 VBad, 301-500 danger)
     
     :param :sea_level: sea level hpa from closest airport
     :returns: temp_c, percent_humidity, hpa_pressure, iaq, meters, error string
@@ -196,15 +221,16 @@ def bme_temp_humid_hpa_iaq_alt(sea_level):
         hpa_pressure = bme.pressure
         gas_resist = bme.gas/100
         
-        # derived sensor data
-        meters = 44330.0 * (1.0 - (hpa_pressure/sea_level)**(1.0/5.255) )
+        # derive altitude from pressure & sea level pressure
+        #    meters = 44330.0 * (1.0 - (hpa_pressure/sea_level)**(1.0/5.255) )
+        meters = calc_altitude(hpa_pressure, sea_level)
         iaq = log(gas_resist) + 0.04 * percent_humidity
         
         if debug:
             print(f"BME680 Temp °C = {temp_c:.2f} C")
             print(f"BME680 Humidity = {percent_humidity:.1f} %")
             print(f"BME680 Pressure = {hpa_pressure:.2f} hPA")
-            print(f"BME680 iaq = {iaq:.1f} IAQ lower better")
+            print(f"BME680 iaq = {iaq:.1f} {iaq_quality(iaq)}")
             print(f"BME680 Alt = {meters * 3.28084:.2f} feet \n")
             
     except OSError as e:
@@ -231,7 +257,6 @@ def display_car(celsius, fahrenheit):
             oled.text(f"{celsius:.0f}", 108, 2)
         else:
             oled.text("xx", 108, 2)
-
     else:
         oled.blit(FrameBuffer(bitmap_unit_in, 24, 10, MONO_HLSB), 0, 0)
         if fahrenheit:
@@ -239,6 +264,7 @@ def display_car(celsius, fahrenheit):
         else:
             oled.text("xx", 108, 2)
     return
+
 
 def display_environment(buzz):
     """
@@ -262,8 +288,9 @@ def display_environment(buzz):
     else:
         oled.text(f"No Temp/Humidity", 0, 10)
         oled.text(f" Sensor Working", 0, 20)
-    
-    oled.text(f"IAQ = {iaq:.0f} IAQ", 0, 24)
+        
+    oled.text(f"IAQ = {iaq:.0f} {iaq_quality(iaq)}", 0, 24)
+
     if metric:
         oled.text(f"Bar = {pressure_hpa:.1f} hpa", 0, 36)
     else:
@@ -279,7 +306,48 @@ def display_environment(buzz):
     return
 
 
-def set_known_values(buzz):
+def button2_not_pushed():
+    global interrupt_2_flag
+    debug = True
+    if interrupt_2_flag == 1:
+        interrupt_2_flag = 0
+        return False
+    else:
+        return True
+
+
+def update_numbers(alt, press, x):
+    """
+    oled display of alt & press,
+    input one is hightlighted by white box/black letters
+    the other one shown in black box/white letters
+    
+    :params pressure: if 1 update altitude if 0 update pressure
+    :params pressure: if 1 update altitude if 0 update pressure
+    :params x: if 1 update altitude if 0 update pressure
+    """
+    if metric:
+        string = f"{alt:.0f}m"
+    else:
+        string = f"{alt * 3.28084:.0f}\'"
+    oled.text(f"Alt = ", 0, 20, 1)
+    # if x=1 updating alt, which is white box & black letters
+    oled.fill_rect(45, 19, 128-45, 9, x) 
+    oled.text(f"{string}", 45, 20, 1-x)
+        
+    if metric:
+        string = f"{press:.1f} hpa"
+    else:
+        string = f"{press * 0.02953:.2f}\""
+    oled.text(f"Sea = ", 0, 36, 1)
+    # if x=1 updating alt, which is black box & white letters
+    oled.fill_rect(45, 35, 128-45, 9, 1-x) 
+    oled.text(f"{string}", 45, 36, x)     
+    oled.show()
+    return
+
+
+def input_known_values(buzz):
     """
     set known
 
@@ -290,95 +358,42 @@ def set_known_values(buzz):
         buzzer.on()
         zzz(.2)
         buzzer.off()
-    
     #
-    print(f"{metric=}")
     oled.fill(0)
     oled.text(f"setting...", 0, 0)
-    
-    oled.fill_rect(48, 19, 52, 9, 1)
-    if metric:
-        oled.text(f"Alt = ", 0, 20, 1)
-        oled.text(f"{altitude_m:.0f}m", 49, 20, 0)
-    else:
-        oled.text(f"Alt = ", 0, 20, 1)
-        oled.text(f"{altitude_m * 3.28084:.0f}\'", 49, 20, 0)
-        
-    if metric:
-        oled.text(f"Sea = {pressure_hpa:.1f} hpa", 0, 36)
-    else:
-        oled.text(f"Sea = {pressure_hpa * 0.02953:.2f}\"", 0, 36)
-    oled.show()
+    update_numbers(altitude_m, pressure_hpa, 1)
         
 #### Enter in New Altitude
-    new_alt = int(input("Enter desired Alt:\n"))
-    print(f"{new_alt=}")
-    
-    if metric:
-        new_alt = new_alt
-    else:
-        new_alt = new_alt/3.28084
-    
-    oled.fill_rect(48, 19, 52, 9, 1)
-    if metric:
-        oled.text(f"Alt = ", 0, 20, 1)
-        oled.text(f"{new_alt:.0f}m", 49, 20, 0)
-    else:
-        oled.text(f"Alt = ", 0, 20, 1)
-        oled.text(f"{new_alt * 3.28084:.0f}\'", 49, 20, 0)
-    
-    print(f"{sea_level_pressure_hpa=}")
-    new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
-    print(f"{new_pressure=}")
-    
-    # blank out previous values
-    if metric:
-        oled.text(f"Sea = {pressure_hpa:.1f} hpa", 0, 36,0)
-    else:
-        oled.text(f"Sea = {pressure_hpa * 0.02953:.2f}\"", 0, 36,0)
-    
-    if metric:
-        oled.text(f"Sea = {new_pressure:.0f} hpa", 0, 36)
-    else:
-        oled.text(f"Sea = {new_pressure * 0.02953:.2f}\"", 0, 36)
-    oled.show()
+    not_stop_loop = True
+#     while (button2_not_pushed()):
+    while (not_stop_loop):
+        new_alt = int(input("Enter desired Alt:\n"))
+        new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
+        if debug:
+            print(f"{new_alt=}")
+            print(f"{sea_level_pressure_hpa=}")
+            print(f"{new_pressure=}")
+        update_numbers(new_alt, new_pressure, 1)
+        not_stop_loop = False
+        
+    update_numbers(new_alt, new_pressure, 0)
     
 #### Enter in New Pressure
-    new_press = int(input("Enter desired Pressure:\n"))
-    print(f"{new_press=}")
-    
-    if metric:
-        new_press = new_press
-    else:
-        new_press = new_press/ 0.02953
-    
-    oled.fill_rect(48, 36, 52, 9, 1)
-    
-    if metric:
-        oled.text(f"Sea = ", 0, 36, 1)
-        oled.text(f"{new_press:.0f}m", 49, 36, 0)
-    else:
-        oled.text(f"Sea = ", 0, 36, 1)
-        oled.text(f"{new_press * 3.28084:.0f}\'", 49, 36, 0)
-    
-    print(f"{sea_level_pressure_hpa=}")
-    new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
-    print(f"{new_pressure=}")
-    
-    # blank out previous values
-    if metric:
-        oled.text(f"Sea = {pressure_hpa:.1f} hpa", 0, 36,0)
-    else:
-        oled.text(f"Sea = {pressure_hpa * 0.02953:.2f}\"", 0, 36,0)
-    
-    if metric:
-        oled.text(f"Sea = {new_pressure:.0f} hpa", 0, 36)
-    else:
-        oled.text(f"Sea = {new_pressure * 0.02953:.2f}\"", 0, 36)
-    oled.show()
-    
-    # TODO update settings for main loop, new we just see them here
-    
+    not_stop_loop = True
+#     while (button2_not_pushed()):
+    while (not_stop_loop):
+        new_pressure = int(input("Enter desired Pressure:\n"))
+        new_alt = calc_altitude(pressure_hpa, new_pressure)
+        if debug:
+            print(f"{new_pressure=}")
+            print(f"{altitude_m=}")
+            print(f"{new_alt=}")
+        update_numbers(new_alt, new_pressure, 0)
+        not_stop_loop = False
+        
+    update_numbers(new_alt, new_pressure, 0)
+        
+    # TODO update settings for main loop, now we just see them here
     #return
     zzz(10)
     return error
@@ -397,6 +412,7 @@ debounce_1_time = 0
 debounce_2_time = 0
 
 sea_level_pressure_hpa = PDX_SLP_1013
+sea_level_pressure_hpa = 1002.6
 temp_f = None
 temp_c = None
 humidity = None
@@ -439,14 +455,13 @@ try:
         # Button 2: rear sensors or front sensors
         if interrupt_2_flag == 1:
             interrupt_2_flag = 0
-            if debug: print("button 2 Interrupt Detected: set known")
-            error = set_known_values (True)
+            if debug: print("button 2 Interrupt Detected: input known values")
+            error = input_known_values (True)
             if error:
-                print(f"Error setting known values: {error}")
-            
+                print(f"Error setting known values: {error}")      
 
         # EVERY 3 SECONDS, calc speed of sound based on
-        # * BME680 temp & humidity (189ms duration)
+        #  * BME680 temp & humidity (189ms duration)
 
         if first_run or elapsed_time > 3000:
             time_since_last_temp_update = time.ticks_ms()
@@ -467,7 +482,6 @@ try:
 
 
         if show_env:
-            # pick first working ultrasonic to show
             display_environment(buzzer_sound)
         else:
             print("... show_env = {show_env}")
