@@ -1,8 +1,9 @@
-# bme680 sensor - temp, humidity, pressure, VoC
+# bme680 sensor - temp, humidity, pressure, IAC, altitude
 #
-# bme60 driver code: https://github.com/robert-hh/BME680-Micropython
+# bme680 driver code:
+#    https://github.com/robert-hh/BME680-Micropython
 #
-# IAQ (Indoor Air Quality0 calculation:
+# IAQ (Indoor Air Quality) calculation:
 #    IAQ value between 0 and 500, where lower values represent higher air quality.
 #    https://github.com/thstielow/raspi-bme680-iaq
 #      IAQ:     0- 50 good
@@ -12,7 +13,13 @@
 #             201-300 worse
 #             301-500 very bad
 #
-# bradcar
+# Portland - PDX airport sea level pressure updated every hour
+#     https://www.weather.gov/wrh/timeseries?site=KPDX
+#
+# my home office is ~361 feet elevation, first bme680 says 303.5 feet (+57.5' correction needed)
+# my garage is at <todo> feet elevation
+#
+# by bradcar
 
 from machine import Pin, I2C
 from time import sleep
@@ -33,6 +40,8 @@ bme = BME680_I2C(i2c=i2c)
 #             151-200 bad
 #             201-300 worse
 #             301-500 very bad
+#     todo: add code to not trust IAQ until 300 cycles or about 30mins.
+#           https://github.com/thstielow/raspi-bme680-iaq
 #     
 #     :param :sea_level: sea level hpa from closest airport
 #     :returns: temp_c, percent_humidity, hpa_pressure, iaq, meters, error string
@@ -81,7 +90,7 @@ while True:
         print(f"Humidity= {humidity:.1f} %")
         print(f"Pressure= {pressure_hpa:.1f} hPa")
         print(f"Gas restance= {gas_resist:.2f} KOhms")
-        print(f"iAQ= {iaq:.2f} lower better [0 to 500]")
+        print(f"iAQ= {iaq:.1f} lower better [0 to 500]")
         print(f"Altitude= {meters:.1f} meters")
         print(f"Altitude= {feet:.1f} feet")
         print()
