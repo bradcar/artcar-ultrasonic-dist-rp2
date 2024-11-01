@@ -5,15 +5,17 @@
 #    https://github.com/RuiSantosdotme/ESP-MicroPython/blob/master/code/WiFi/HTTP_Client_IFTTT_BME280/BME280.py
 #    However it returns strings, so turned this into floats in my version
 #
-# PDX sea level pressure every 2 mins
+# Portland - PDX airport sea level pressure updated every hour
+#     https://www.weather.gov/wrh/timeseries?site=KPDX
+#
+# my home office is ~361 feet elevation
+# my garage is at <todo> feet elevation
+#
 # by bradcar
-
-# ****** UNTESTED  *****  by bradcar  TODO when I get the sensor
 
 from machine import Pin, I2C
 from time import sleep
 import BME280
-# from bme680 import *
 
 # Initialize I2C communication
 i2c = I2C(id=1,  sda=Pin(26), scl=Pin(27), freq=10000)
@@ -49,7 +51,6 @@ def bme_temp_humidity_altitude(sea_level):
 
 # Initialize BME280 sensor
 bme = BME280.BME280(i2c=i2c)
-# bme = BME680_IC2(i2c=i2c)
 
 
 while True:
@@ -58,7 +59,7 @@ while True:
         # https://community.bosch-sensortec.com/t5/Question-and-answers/How-to-calculate-the-altitude-from-the-pressure-sensor-data/qaq-p/5702
         # https://www.weather.gov/wrh/timeseries?site=KPDX
         # hPa = mB
-        sea_level_pressure_hpa = 1012.90
+        sea_level_pressure_hpa = 1011.20
         
         # Read sensor data
         temperature_c, humidity, pressure_hpa, altitude_m, _ = bme_temp_humidity_altitude(sea_level_pressure_hpa)        
