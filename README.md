@@ -51,8 +51,8 @@ Temp correction for the speed of sound improves accuracty. The humidity correcti
 * speed of sound going from 0C to 30C goes from 331.48 m/s to 351.24 m/s (~ 6%)
 * speed of sound at going from 10% to 90% humidity at 30C goes from 349.38 m/s to 351.24 m/s (~ 0.53%)
 
-## Other Sensors in sensor-tests director
-* A02YYTW, A02YYUW - Two types of UART sensors A02YYTW (A0221AT, Controlled/target mode), A02YYUW(A0221?, automatic mode) UART. the code is for target, should work if remove the write.
+## Other Sensors in sensor-tests directory
+* A02YYTW, A02YYUW - Two types of UART sensors A02YYTW (A0221AT, Controlled/target mode), A02YYUW(A0221?, automatic mode) UART. The code in sensor-tests directory is for target, but should work for Automatic, if remove the write to the sensor.
 * HC-SR04, JSN-SR04T (PWM), A02YYMW PWM - using PWM which only sends one ping from one sensor at a time and then measures the return time. I picked A02YYMW PWM since it has the best waterproofing and accuracy
 * BME280 - temp, humidity, air pressure
 * DHT22 - temp & humidity
