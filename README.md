@@ -8,8 +8,8 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
   * ssd1306 Framebuffer-based SW for printing text & blit of bitmap images
 * A02YYMW (PWM, A0221AM) - 1x to 3x Ultrasonic sensors are polled for distances, using PWM which only sends one ping from one sensor at a time and then measures the return time.
 * DS18B20 - waterproof outdoor temp that uses onewire protocol, singlewire
-* BME680 - for inside temp & humidity, air pressure, air quality, and altitude.
-  * I2C, place inside outside air input to vent, in case external temp sensor has issues
+* BME680 (I2C) - for inside temp & humidity, air pressure, air quality, and altitude.
+  * will place inside outside air input to vent to protect from the weather, in case external temp sensor has issues
 * button debounce that uses efficient interrupt code (does not use CPU cycles with sleep, yay!)
 * Temperature from on-board RP2350 (no external pins, ADC4)
  
@@ -66,3 +66,9 @@ I decided not to use A02YYTW(A0221AT, Controlled/Target UART mode) UART sensors,
 * Raspberry Pi Pico 2 only offers two dedicated UARTs and I use UART0 for communication to a laptop (when needed). In order to get 3 UART ultrasonic sensors on one Pico, one needs extra HW/SW: 
   * HW for dual-UART-to-SDI: https://www.amazon.com/JESSINIE-SC16IS752-Adapter-Conversion-Communication/dp/B0BBLV98ZP/
   * SW for UART-to-SDI: https://github.com/rickkas7/SC16IS7xxRK
+ 
+## TODOs
+* Check what length of cat6(twister pair) that can be added to A02YYTW, BME280, DS18B20
+* Determine if should run SSD1309 on 5v
+* Consider putting air quality status in tiny font
+* Consider putting altitude in tiny font, but need to figure out way to input sea level pressure at neareat airport.
