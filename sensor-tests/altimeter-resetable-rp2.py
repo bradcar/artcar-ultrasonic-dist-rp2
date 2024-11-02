@@ -75,7 +75,14 @@ led = Pin(25, Pin.OUT)
 # Pin assignment  i2c1 
 i2c = I2C(id=1, scl=Pin(27), sda=Pin(26))
 
+# BME690 #77 address, no way to change to alt address on my version
 bme = BME680_I2C(i2c=i2c)
+
+# multiple sensors on i2c
+# https://learn.adafruit.com/working-with-multiple-i2c-devices/two-devices-using-alternate-address
+# https://forum.arduino.cc/t/two-sensor-with-two-ic2/1140513/11
+#orig  bmp = BMX280(bus, 0x77)
+#mine? bmp = BMX280(i2c, 0x76) # after add solder bump, TODO checck before & after bump
 
 oled_spi = machine.SPI(1)
 # print(f"oled_spi:{oled_spi}")
@@ -88,29 +95,29 @@ oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
 #
 # 'art-car-imag', 56x15px
 bitmap_artcar_image_back = bytearray([
-    0xc9, 0x04, 0x52, 0x91, 0x0c, 0x08, 0x43, 0xc8, 0x82, 0x8e, 0x90, 0x93, 0x10, 0x93, 0xe0, 0x63,
-    0x08, 0x78, 0xe0, 0xe3, 0x07, 0xff, 0x9f, 0xff, 0xff, 0xff, 0xfc, 0xff, 0xc0, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x03, 0x40, 0x1c, 0xf3, 0xe3, 0x8e, 0x78, 0x02, 0x42, 0x22, 0x88, 0x84, 0x51, 0x44,
-    0x42, 0x42, 0x22, 0x88, 0x84, 0x11, 0x44, 0x42, 0x42, 0x22, 0xf0, 0x84, 0x11, 0x78, 0x42, 0x22,
-    0x3e, 0x88, 0x84, 0x1f, 0x44, 0x44, 0x10, 0x22, 0x88, 0x84, 0x51, 0x44, 0x08, 0x0c, 0x22, 0x88,
-    0x83, 0x91, 0x44, 0x30, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x00, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    0xc9,0x04,0x52,0x91,0x0c,0x08,0x43,0xc8,0x82,0x8e,0x90,0x93,0x10,0x93,0xe0,0x63,
+    0x08,0x78,0xe0,0xe3,0x07,0xff,0x9f,0xff,0xff,0xff,0xfc,0xff,0xc0,0x00,0x00,0x00,
+    0x00,0x00,0x03,0x40,0x1c,0xf3,0xe3,0x8e,0x78,0x02,0x42,0x22,0x88,0x84,0x51,0x44,
+    0x42,0x42,0x22,0x88,0x84,0x11,0x44,0x42,0x42,0x22,0xf0,0x84,0x11,0x78,0x42,0x22,
+    0x3e,0x88,0x84,0x1f,0x44,0x44,0x10,0x22,0x88,0x84,0x51,0x44,0x08,0x0c,0x22,0x88,
+    0x83,0x91,0x44,0x30,0x03,0x00,0x00,0x00,0x00,0x00,0xc0,0x00,0xff,0xff,0xff,0xff,
+    0xff,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 ])
 #
 # rear 'unit_cm', 24x10px
 bitmap_unit_cm = bytearray([
-    0xf0, 0x03, 0xc0, 0x80, 0x00, 0x40, 0xbe, 0xff, 0x40, 0xb6, 0xdb, 0x40, 0x30, 0xdb, 0x00, 0x30,
-    0xdb, 0x00, 0xb6, 0xdb, 0x40, 0xbe, 0xdb, 0x40, 0x80, 0x00, 0x40, 0xf0, 0x03, 0xc0
+    0xf0,0x03,0xc0,0x80,0x00,0x40,0xbe,0xff,0x40,0xb6,0xdb,0x40,0x30,0xdb,0x00,0x30,
+    0xdb,0x00,0xb6,0xdb,0x40,0xbe,0xdb,0x40,0x80,0x00,0x40,0xf0,0x03,0xc0
 ])
 # 'unit in', 24x10px
 bitmap_unit_in = bytearray([
-    0xf0, 0x03, 0xc0, 0x80, 0x00, 0x40, 0x8c, 0x7c, 0x40, 0x8c, 0x6c, 0x40, 0x0c, 0x6c, 0x00, 0x0c,
-    0x6c, 0x00, 0x8c, 0x6c, 0x40, 0x8c, 0x6c, 0x40, 0x80, 0x00, 0x40, 0xf0, 0x03, 0xc0
+    0xf0,0x03,0xc0,0x80,0x00,0x40,0x8c,0x7c,0x40,0x8c,0x6c,0x40,0x0c,0x6c,0x00,0x0c,
+    0x6c,0x00,0x8c,0x6c,0x40,0x8c,0x6c,0x40,0x80,0x00,0x40,0xf0,0x03,0xc0
 ])
 # 'degree-temp', 24x10px
 degree_temp = bytearray([
-    0xf0, 0x00, 0x0f, 0x80, 0x00, 0x01, 0x80, 0x00, 0x0d, 0x80, 0x00, 0x0d, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0x80, 0x00, 0x01, 0xf0, 0x00, 0x0f
+    0xf0,0x00,0x0f,0x80,0x00,0x01,0x80,0x00,0x0d,0x80,0x00,0x0d,0x00,0x00,0x00,0x00,
+    0x00,0x00,0x80,0x00,0x01,0x80,0x00,0x01,0x80,0x00,0x01,0xf0,0x00,0x0f
 ])
 DWELL_MS_LOOP = 100
 PDX_SLP_1013 = 1009.90
@@ -133,7 +140,7 @@ button_1.irq(trigger=Pin.IRQ_FALLING, handler=callback)
 button_2.irq(trigger=Pin.IRQ_FALLING, handler=callback)
 
 
-# functions 
+# Functions =================================================
 
 def onboard_temperature():
     """
@@ -158,7 +165,7 @@ def iaq_quality(iaq_value):
     :return: string to add context to the number
     """
     if iaq_value < 50:
-        return "low"
+        return "best"
     elif iaq_value < 100:
         return "ave"
     elif iaq_value < 150:
@@ -196,17 +203,60 @@ def calc_altitude(hpa, sea_level_pressure):
     return meters
 
 
+def bmp_temp_hpa_alt(sea_level_pressure):
+    """
+    read temp, pressure from the bmp390 sensor
+    measurement takes ~??? ms
+    
+    https://github.com/DFRobot/DFRobot_BMP388
+    https://forums.raspberrypi.com/viewtopic.php?t=378591
+    https://forums.adafruit.com/viewtopic.php?t=179852
+    https://github.com/KitWallace/pipico/blob/main/drivers/BMX280.py
+    
+    Pressure accuracy:  +/-3 Pa, +/-0.25 meters
+
+    :param sea_level_pressure: sea level hpa from closest airport
+    :return: celsius, hpa_pressure, meters, error string
+    """
+    print("BMP390 : Not tested yet")
+#     debug = True
+#     try:
+#         celsius = bmp.temperature
+#         hpa_pressure = bme.pressure
+# 
+#         # derive altitude from pressure & sea level pressure
+#         #    meters = 44330.0 * (1.0 - (hpa_pressure/sea_level)**(1.0/5.255) )
+#         meters = calc_altitude(hpa_pressure, sea_level_pressure)
+#         iaq_value = log(gas_kohms) + 0.04 * percent_humidity
+# 
+#         if debug:
+#             print(f"BMP390 Temp °C = {celsius:.2f} C")
+#             print(f"BMP390 Pressure = {hpa_pressure:.2f} hPA")
+#             print(f"BMP390 Alt = {meters * 3.28084:.2f} feet \n")
+# 
+#     except OSError as e:
+#         print("BMP390: Failed to read sensor.")
+#         return None, None, None, "ERROR_BME680:" + str(e)
+# 
+#     return celsius, hpa_pressure, meters, None
+    return
+
+
 def bme_temp_humid_hpa_iaq_alt(sea_level_pressure):
     """
     read temp, humidity, pressure, Indoor Air Qualtiy (IAQ) from the BME680 sensor
     measurement takes ~189ms
+    
+    Pressure accuracy:  +/-12 Pa, +/-1 meters
+    
     function iaq_quality(iaq) will show the textual scale
     IAQ: (0- 50 low, 51-100 ave, 101-150 poor, 151-200 bad, 201-300 VBad, 301-500 danger)
+    
+    need 30min before can trust IAQ
 
     :param sea_level_pressure: sea level hpa from closest airport
     :return: celsius, percent_humidity, hpa_pressure, iaq, meters, error string
     """
-    # Read sensor data
     debug = True
     try:
         celsius = bme.temperature
@@ -315,47 +365,39 @@ def button2_not_pushed():
         return True
 
 
-def update_numbers(alt, press, x):
+def update_numbers(alt, press):
     """
     oled display of alt & press,
-    input one is hightlighted by white box/black letters
-    the other one shown in black box/white letters
+    changes ot both altitude & presure hightlighted by white box/black letters
 
-    :params pressure: if 1 update altitude if 0 update pressure
-    :params pressure: if 1 update altitude if 0 update pressure
-    :params x: if 1 update altitude if 0 update pressure
+    :params alt: altitude in meters
+    :params pressure: pressure in hpa
     """
     if metric:
         string = f"{alt:.0f}m"
     else:
         string = f"{alt * 3.28084:.0f}\'"
     oled.text(f"Alt = ", 0, 20, 1)
-    # if x=1 updating alt, which is white box & black letters
-    oled.fill_rect(45, 19, 128 - 45, 9, x)
-    oled.text(f"{string}", 45, 20, 1 - x)
+    oled.fill_rect(45, 19, 128 - 45, 9, 1)
+    oled.text(f"{string}", 45, 20, 0)
 
-    if metric:
-        string = f"{press:.1f} hpa"
-    else:
-        string = f"{press * 0.02953:.2f}\""
+    string = f"{press:.1f} hpa"
     oled.text(f"Sea = ", 0, 36, 1)
-    # if x=1 updating alt, which is black box & white letters
-    oled.fill_rect(45, 35, 128 - 45, 9, 1 - x)
-    oled.text(f"{string}", 45, 36, x)
+    oled.fill_rect(45, 35, 128 - 45, 9, 1)
+    oled.text(f"{string}", 45, 36, 0)
     oled.show()
     return
 
 
 def input_known_values(buzz):
     """
-    set known value of altitude
-    Elevation range on earth :-500 to 30,000
-    record Sea Level Pressure: 870 to 1085
-    limit range of pot's entry to these values
+    set known value of altitude in Meters or feet
+    Elevation range on earth :-500 to 30,000 feet, limit range of pot's entry to these values
+    record Sea Level Pressure: 870 to 1085, which is by standard always hpa not inches-of-mercury
 
     param:buzz: buzz if move to next input
     """
-    global pressure_hpa
+    global metric, interrupt_1_flag, sea_level_pressure_hpa
 
     err = None
     new_alt = altitude_m
@@ -367,17 +409,23 @@ def input_known_values(buzz):
     #
     oled.fill(0)
     oled.text(f"setting...", 0, 0)
-    update_numbers(altitude_m, pressure_hpa, 1)
+    update_numbers(altitude_m, pressure_hpa)
 
     #### Enter in New Altitude
-    not_stop_loop = True
-    #     while (button2_not_pushed()):
-    while not_stop_loop:
+    while (button2_not_pushed()):
         per = read_pot()
         print(f"{per=}")
         # -500 to 30,000, 0 to 1.00, 0 to 30,500 (" (x*30500)-500 " gives -500 to 30,000)
-        # new_alt = (per * 30500.0) - 500.0
-        new_alt = float(input("Enter desired Alt:\n"))
+        new_alt = (per * (30500.0 / 3.28084)) - (500.0 / 3.28084)
+        print(f"{new_alt=}\n")
+        
+        # Button 1: cm/in
+        if interrupt_1_flag == 1:
+            interrupt_1_flag = 0
+            if debug: print("button 1 Interrupt Detected: in/cm")
+            metric = not metric  # Toggle between metric and imperial units
+  
+        zzz(.2)
         if not metric:
             new_alt = new_alt / 3.28084
         new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
@@ -385,10 +433,37 @@ def input_known_values(buzz):
             print(f"{new_alt=}")
             print(f"{sea_level_pressure_hpa=}")
             print(f"{new_pressure=}")
-        update_numbers(new_alt, new_pressure, 1)
-        not_stop_loop = False
+        update_numbers(new_alt, new_pressure)
 
-    update_numbers(new_alt, new_pressure, 0)
+
+    update_numbers(new_alt, new_pressure)
+    if buzz:
+        buzzer.on()
+        zzz(.2)
+        buzzer.off()
+#     sea_level_pressure_hpa = new_pressure
+
+
+#         #### Enter in New Altitude
+#     not_stop_loop = True
+#     #     while (button2_not_pushed()):
+#     while not_stop_loop:
+#         per = read_pot()
+#         print(f"{per=}")
+#         # -500 to 30,000, 0 to 1.00, 0 to 30,500 (" (x*30500)-500 " gives -500 to 30,000)
+#         # new_alt = (per * 30500.0) - 500.0
+#         new_alt = float(input("Enter desired Alt:\n"))
+#         if not metric:
+#             new_alt = new_alt / 3.28084
+#         new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
+#         if debug:
+#             print(f"{new_alt=}")
+#             print(f"{sea_level_pressure_hpa=}")
+#             print(f"{new_pressure=}")
+#         update_numbers(new_alt, new_pressure, 1)
+#         not_stop_loop = False
+# 
+#     update_numbers(new_alt, new_pressure, 0)
 
     # #### Enter in New Pressure
     #     not_stop_loop = True
@@ -411,7 +486,7 @@ def input_known_values(buzz):
     #         
     #     update_numbers(new_alt, new_pressure, 0)
 
-    # pressure_hpa = new_pressure
+    # sea_level_pressure_hpa = new_pressure
 
     # TODO update settings for main loop, now we just see them here
     # only need to update the "new" sea level pressure with global update
@@ -433,7 +508,7 @@ debounce_1_time = 0
 debounce_2_time = 0
 
 sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = 1010.5
+sea_level_pressure_hpa = 1012.3
 temp_f = None
 temp_c = None
 humidity = None
@@ -444,6 +519,11 @@ print(implementation[0], uname()[3],
       "\nrun on", uname()[4])
 temp = onboard_temperature()
 print(f"onboard Pico 2 temp = {temp:.1f}C")
+i2c1_devices = i2c.scan()
+if i2c1_devices:
+    for d in i2c1_devices: print(f"i2c1 device{d} = {hex(d)}")
+else:
+    print("ERROR: No i2c1 devices")
 print("====================================")
 print(f"oled_spi:{oled_spi}")
 
@@ -504,7 +584,7 @@ try:
         if not error:
             display_environment(buzzer_sound)
         else:
-            oled.fill(0)  # turn off oled
+            oled.fill(0)
             oled.text("Error", 0, 0, 1)
             oled.fill_rect(0, 11, 128, 9, 1)
             oled.text(f"No Alt Sensor", 13, 12, 0)
