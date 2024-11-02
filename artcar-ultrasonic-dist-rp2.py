@@ -116,10 +116,11 @@ for i in range(len(sensor)):
     trigger.append(trigger_pin)
     echo.append(echo_pin)
 
+ds_pin = machine.Pin(22)
 led = Pin(25, Pin.OUT)
 # Pin assignment  i2c1 
 i2c = I2C(id=1, scl=Pin(27), sda=Pin(26))
-ds_pin = machine.Pin(28)
+
 
 bme = BME680_I2C(i2c=i2c)
 
@@ -978,6 +979,7 @@ debounce_2_time = 0
 
 speed_sound = SPEED_SOUND_20C_70H
 sea_level_pressure_hpa = PDX_SLP_1013
+sea_level_pressure_hpa = 1003.5
 temp_f = None
 temp_c = None
 humidity = None
@@ -990,6 +992,7 @@ temp = onboard_temperature()
 print(f"onboard Pico 2 temp = {temp:.1f}C")
 print("====================================")
 print(f"oled_spi:{oled_spi}")
+print(f"{sea_level_pressure_hpa=}")
 
 # roms will be a list of sensors on same GPIO pin
 roms = ds_sensor.scan()
