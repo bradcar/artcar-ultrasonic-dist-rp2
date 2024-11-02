@@ -12,7 +12,7 @@ from sys import implementation
 import time
 from time import sleep as zzz
 
-ds_pin = machine.Pin(28)
+ds_pin = machine.Pin(22)
 ds_sensor = ds18x20.DS18X20(onewire.OneWire(ds_pin))
 
 # startup code
