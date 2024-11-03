@@ -8,16 +8,13 @@
 #    - set known altitude, input with potentiameter, or
 #    - set known sea kevel pressure from nearest airport, input with potentiameter
 #    - buttons debounced with efficient rp2 interrupts -- nice!
-#    - ssd1309 SDI or I2C code (sw is ssd1306)
+#    - ssd1309 SDI or I2C code (SW is ssd1306)
 # my home office is
-#    ~361 feet elevation, 110.03m
-#    first bme680 says 303.5 feet, 92.51 m
-
-#    +57.5' +17.5m correction needed)
+#    365.0 feet elevation, 111.25m
+#    first bme680 says 287.1 feet, 85.51 m
+#      correction: +77.9' or + 25.75m correction needed)
 # my garage is at <todo> feet elevation
-#    ~335 feet elevation, 102.11m  (26' lower thab offie)
-#
-#  by bradcar
+#    ~335 feet elevation, 102.11m  (26' lower than offie)
 #
 # Key links
 #     https://micropython.org/download/RPI_PICO2/ for latest .uf2 preview
@@ -26,7 +23,11 @@
 #   : https://micropython-stubs.readthedocs.io/en/main/packages.html#mp-packages
 #
 # TODOs
-#  * add button #3 for ???
+#  * add digital encoder, use button for 10' correction
+#
+#
+# by bradcar
+
 import time
 from math import log
 from os import uname
@@ -38,7 +39,6 @@ from framebuf import FrameBuffer, MONO_HLSB
 from machine import Pin, I2C, ADC
 
 # ic2
-# from machine import I2C
 # from ssd1306 import SSD1306_I2C
 from ssd1306 import SSD1306_SPI
 
@@ -68,7 +68,7 @@ cs = machine.Pin(9)  # dummy (any un-used pin), no connection
 res = machine.Pin(12)  # RES (RST)  gp12
 dc = machine.Pin(13)  # DC         gp13
 
-# ADC3 signal = gp28:  Pin 33 AGND left , 34 ADC3(middle pin), Vcc right pin
+# ADC3 signal = gp28:  Pin 33 AGND left, 34 ADC3(middle pin), Vcc right pin
 pot = ADC(Pin(28))
 
 led = Pin(25, Pin.OUT)
@@ -81,8 +81,9 @@ bme = BME680_I2C(i2c=i2c)
 # multiple sensors on i2c
 # https://learn.adafruit.com/working-with-multiple-i2c-devices/two-devices-using-alternate-address
 # https://forum.arduino.cc/t/two-sensor-with-two-ic2/1140513/11
-#orig  bmp = BMX280(bus, 0x77)
+#orig  bmp = BMX280(bus, 0x77) # note: can change addr if SDO pin LOW = 0x76
 #mine? bmp = BMX280(i2c, 0x76) # after add solder bump, TODO checck before & after bump
+
 
 oled_spi = machine.SPI(1)
 # print(f"oled_spi:{oled_spi}")
@@ -90,8 +91,6 @@ oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
 
 # === Bitmap DISPLAY IMAGES ====
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
-# const unsigned char bitmap_artcar_image[] PROGMEM = {0xc9,0x04,0x52, ...
-# can be bitmap_artcar_image=bytearray(b'\xc9\x04\x59
 #
 # 'art-car-imag', 56x15px
 bitmap_artcar_image_back = bytearray([
@@ -324,10 +323,6 @@ def display_environment(buzz):
     param:buzz:  distance if dist = -1.0 then display error
     """
     oled.fill(0)
-    #     if dist < 120.0 and buzz:
-    #         buzzer.on()
-    #     elif buzz:
-    #         buzzer.off()
     if temp_c:
         if metric:
             oled.text(f"Temp = {temp_c:.1f}C", 0, 0)
@@ -414,11 +409,13 @@ def input_known_values(buzz):
     #### Enter in New Altitude
     while (button2_not_pushed()):
         per = read_pot()
-        print(f"{per=}")
-        # -500 to 30,000, 0 to 1.00, 0 to 30,500 (" (x*30500)-500 " gives -500 to 30,000)
-        new_alt = (per * (30500.0 / 3.28084)) - (500.0 / 3.28084)
-        print(f"{new_alt=}\n")
-        
+        print(f"{(per*100.0)=}")
+
+        # 0 to 70  (per * 70.0) + 970  gives 970 to 1040
+        new_pressure = (per * 70.0) + 970.0
+        new_alt = calc_altitude(pressure_hpa, new_pressure)
+        print (f"{new_alt=}, {new_pressure=}\n")
+                
         # Button 1: cm/in
         if interrupt_1_flag == 1:
             interrupt_1_flag = 0
@@ -427,8 +424,8 @@ def input_known_values(buzz):
   
         zzz(.2)
         if not metric:
-            new_alt = new_alt / 3.28084
-        new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
+            new_alt = new_alt * 3.28084
+#         new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
         if debug:
             print(f"{new_alt=}")
             print(f"{sea_level_pressure_hpa=}")
@@ -441,57 +438,11 @@ def input_known_values(buzz):
         buzzer.on()
         zzz(.2)
         buzzer.off()
-#     sea_level_pressure_hpa = new_pressure
 
+    sea_level_pressure_hpa = new_pressure
 
-#         #### Enter in New Altitude
-#     not_stop_loop = True
-#     #     while (button2_not_pushed()):
-#     while not_stop_loop:
-#         per = read_pot()
-#         print(f"{per=}")
-#         # -500 to 30,000, 0 to 1.00, 0 to 30,500 (" (x*30500)-500 " gives -500 to 30,000)
-#         # new_alt = (per * 30500.0) - 500.0
-#         new_alt = float(input("Enter desired Alt:\n"))
-#         if not metric:
-#             new_alt = new_alt / 3.28084
-#         new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
-#         if debug:
-#             print(f"{new_alt=}")
-#             print(f"{sea_level_pressure_hpa=}")
-#             print(f"{new_pressure=}")
-#         update_numbers(new_alt, new_pressure, 1)
-#         not_stop_loop = False
-# 
-#     update_numbers(new_alt, new_pressure, 0)
-
-    # #### Enter in New Pressure
-    #     not_stop_loop = True
-    # #     while (button2_not_pushed()):
-    #     while (not_stop_loop):
-    #         per = read_pot()
-    #         print(f"{per=}")
-    #         # 870 to 1085 , 0 to 1.00, 0 to 215 (" (x*215)+870 " gives 870 to 1085)
-    #         # new_pressure = (per * 215.0) + 870.0
-    #         new_pressure = float(input("Enter desired Pressure:\n"))
-    #         if not metric:
-    #             new_pressure = new_pressure / 0.02953
-    #         new_alt = calc_altitude(pressure_hpa, new_pressure)
-    #         if debug:
-    #             print(f"{new_pressure=}")
-    #             print(f"{altitude_m=}")
-    #             print(f"{new_alt=}")
-    #         update_numbers(new_alt, new_pressure, 0)
-    #         not_stop_loop = False
-    #         
-    #     update_numbers(new_alt, new_pressure, 0)
-
-    # sea_level_pressure_hpa = new_pressure
-
-    # TODO update settings for main loop, now we just see them here
-    # only need to update the "new" sea level pressure with global update
     # return
-    zzz(10)
+    zzz(5)
     return err
 
 
@@ -508,7 +459,7 @@ debounce_1_time = 0
 debounce_2_time = 0
 
 sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = 1012.3
+sea_level_pressure_hpa = 1024.10
 temp_f = None
 temp_c = None
 humidity = None
