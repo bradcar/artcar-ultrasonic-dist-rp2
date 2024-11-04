@@ -23,8 +23,8 @@
 #   : https://micropython-stubs.readthedocs.io/en/main/packages.html#mp-packages
 #
 # TODOs
-#  * add digital encoder, use button for 10' correction
-#
+#  * add digital encoder, use it's button for 10' correction, else 1' correction per dedent
+#  * add button #3 to go between detail data & large font summary
 #
 # by bradcar
 
@@ -37,6 +37,11 @@ from time import sleep as zzz
 from bme680 import BME680_I2C
 from framebuf import FrameBuffer, MONO_HLSB
 from machine import Pin, I2C, ADC
+
+# Peter Hinch fonts: https://github.com/peterhinch/micropython-font-to-py
+# short_writer Code modified by: Charlotte Swift
+from writer_short import Writer
+import freesans20 as font_20px   # 20px high
 
 # ic2
 # from ssd1306 import SSD1306_I2C
@@ -84,10 +89,11 @@ bme = BME680_I2C(i2c=i2c)
 #orig  bmp = BMX280(bus, 0x77) # note: can change addr if SDO pin LOW = 0x76
 #mine? bmp = BMX280(i2c, 0x76) # after add solder bump, TODO checck before & after bump
 
-
 oled_spi = machine.SPI(1)
 # print(f"oled_spi:{oled_spi}")
 oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
+
+text_20px = Writer(oled,font_20px, verbose=False)
 
 # === Bitmap DISPLAY IMAGES ====
 # image2cpp (convert png into C code): https://javl.github.io/image2cpp/
@@ -350,6 +356,35 @@ def display_environment(buzz):
     return
 
 
+def display_big_num(buzz):
+    """
+    display just alt & hpa readings
+    No need to oled.fill(0) before or oled.show() after call
+
+    param:buzz:  distance if dist = -1.0 then display error
+    """
+    oled.fill(0)
+    if metric:
+        chars = " m"
+        convert = 1.0
+    else:
+        chars = "\'"
+#         chars = " f"
+        convert = 3.28084
+
+    oled.text("Altimeter", 0, 0)
+    oled.text("Alt", 16, 20)
+    text_20px.set_textpos(49, 15)
+    text_20px.printstring(f"{(altitude_m*convert):.0f}{chars}") #10px per char? variable space width
+    
+    #display pressure in hpa only
+    oled.text("hPA", 16, 43)
+    text_20px.set_textpos(52, 38)
+    text_20px.printstring(f"{pressure_hpa:.1f}") #10px per char? variable space width
+    oled.show()
+    return
+
+
 def button2_not_pushed():
     global interrupt_2_flag
     debug = True
@@ -425,7 +460,6 @@ def input_known_values(buzz):
         zzz(.2)
         if not metric:
             new_alt = new_alt * 3.28084
-#         new_pressure = calc_sea_level_pressure(pressure_hpa, new_alt)
         if debug:
             print(f"{new_alt=}")
             print(f"{sea_level_pressure_hpa=}")
@@ -459,7 +493,7 @@ debounce_1_time = 0
 debounce_2_time = 0
 
 sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = 1024.10
+sea_level_pressure_hpa = 1025.90
 temp_f = None
 temp_c = None
 humidity = None
@@ -533,7 +567,8 @@ try:
             first_run = False
 
         if not error:
-            display_environment(buzzer_sound)
+#             display_environment(buzzer_sound)
+            display_big_num(buzzer_sound)
         else:
             oled.fill(0)
             oled.text("Error", 0, 0, 1)
