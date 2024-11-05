@@ -34,7 +34,7 @@
 # by bradcar
 
 import time
-from math import log
+from math import log, floor
 from os import uname
 from sys import implementation
 from time import sleep as zzz
@@ -436,15 +436,15 @@ def input_known_values(buzz):
 
     err = None
     new_alt = altitude_m
-    print(f"start: {new_alt=}")
-    new_pressure = pressure_hpa
+    print(f"adjustment start: alt= {new_alt} m, {new_alt * 3.28084} ft")
+    print(f"  sea level pressure = {sea_level_pressure_hpa} hpa")
     if buzz:
         buzzer.on()
         zzz(.2)
         buzzer.off()
     #
     oled.fill(0)
-    oled.text(f"setting...", 0, 0)
+    oled.text(f"adjustiing...", 0, 0)
     update_numbers(altitude_m, pressure_hpa)
 
     #### Increment/decrement New Altitude in feet, calcule new sea level pressure
@@ -470,8 +470,9 @@ def input_known_values(buzz):
         new_alt = new_alt_feet / 3.28084
         
         new_slp = calc_sea_level_pressure(pressure_hpa, new_alt)
-        print (f"{new_alt=}, {new_alt_feet=}")
-        print (f"{new_slp=}, {sea_level_pressure_hpa=}, {(new_slp - sea_level_pressure_hpa)=}\n")
+        if debug:
+            print (f"{new_alt=}, {new_alt_feet=}")
+            print (f"{new_slp=}, {sea_level_pressure_hpa=}, {(new_slp - sea_level_pressure_hpa)=}\n")
                 
         # Button 1: cm/in
         if interrupt_1_flag == 1:
@@ -486,6 +487,8 @@ def input_known_values(buzz):
         update_numbers(new_alt, new_slp)
 
     # upon loop exit beep, and update global sea_level_pressure_hpa
+    print(f"adjustment end: alt= {new_alt} m, {new_alt * 3.28084} ft")
+    print(f"  sea level pressure = {new_slp} hpa\n")
     if buzz:
         buzzer.on()
         zzz(.2)
@@ -511,9 +514,8 @@ debounce_2_time = 0
 
 # Sea level pressure adjustment is 0.12598 hPA per foot @ 365'
 # SLP_BME680_CALIBRATION = 2.516052
-SLP_BME680_CALIBRATION = 2.516052 
-sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = SLP_BME680_CALIBRATION + 1026.50
+SLP_BME680_CALIBRATION = 3.15 
+INIT_SEA_LEVEL_PRESSURE = 1026.50
 
 temp_f = None
 temp_c = None
@@ -532,13 +534,17 @@ if i2c1_devices:
 else:
     print("ERROR: No i2c1 devices")
 print("====================================")
-print(f"oled_spi:{oled_spi}")
+print(f"oled_spi:{oled_spi}\n")
 
 # blank display
 oled.fill(0)
 oled.text("Starting", 0, 0)
 oled.text("altimeter...", 0, 8)
 oled.show()
+
+sea_level_pressure_hpa = INIT_SEA_LEVEL_PRESSURE + SLP_BME680_CALIBRATION
+print(f"Initial:   sea level pressure = {INIT_SEA_LEVEL_PRESSURE} hpa")
+print(f"Calibrate: sea level pressure = {sea_level_pressure_hpa} hpa\n")
 
 if buzzer_sound: buzzer.on()
 zzz(.2)
