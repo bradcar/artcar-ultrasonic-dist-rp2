@@ -123,9 +123,9 @@ while True:
         text_20px.printstring(f"{char_index}: {chr(char_index)}")
         oled.hline(50, offset, 20, 1)
         
+        #last offset is at 63, the last of 64 pixels
         offset = offset+20+1
         oled.hline(50, offset, 20, 1)
-        print(f"{offset=}")
         
         zzz(.3)
         oled.show()
