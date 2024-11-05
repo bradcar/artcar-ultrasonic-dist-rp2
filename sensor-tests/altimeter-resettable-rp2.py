@@ -426,7 +426,7 @@ def adjust_feet_elevation (new_alt_feet):
 
 def input_known_values(buzz):
     """
-    adjust altitude in increments of +/- 1 foot or +/- 10 foot
+    adjust altitude in increments of +/- 1 foot or +/- 25 foot
     show in either feet or meters
     dependent variable is new Sea Level Pressure in hpa
 
@@ -455,19 +455,15 @@ def input_known_values(buzz):
 
         rotary_new = rotary.value()
         if rotary_switch.value() == 0:
-            if rotary_multiplier == 1:
-                rotary_multiplier = 10
-            else:
-                rotary_multiplier = 1
+            # toggle between 1 and 25
+            rotary_multiplier = 1 if rotary_multiplier != 1 else 25
             while rotary_switch.value() == 0:
                 continue
 
         if rotary_old != rotary_new:
-            if rotary_old < rotary_new:
-                direction = 1
-            else:
-                direction = -1
-            new_alt_feet = new_alt_feet + direction*rotary_multiplier
+            # change in value since last loop then scale by multiplier
+            delta = rotary_new - rotary_old 
+            new_alt_feet = new_alt_feet + delta*rotary_multiplier
             rotary_old = rotary_new
             if debug: print(f"{new_alt_feet=}")
         
@@ -517,7 +513,7 @@ debounce_2_time = 0
 # SLP_BME680_CALIBRATION = 2.516052
 SLP_BME680_CALIBRATION = 2.516052 
 sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = SLP_BME680_CALIBRATION + 1025.50
+sea_level_pressure_hpa = SLP_BME680_CALIBRATION + 1026.50
 
 temp_f = None
 temp_c = None
