@@ -1,30 +1,37 @@
-# Raspberry Pi Pico 2 project - Altimeter Settable to know elevation or sea level pressure - Oct 2024
+# Raspberry Pi Pico 2: Altimeter = Elevation & sea level pressure ajdust - Nov 2024
 #
-# Uses BME680, uses oled SPI display to show measured temp, humidity, pressure, IAQ, altitude
+# Uses.....
 #
-# based on Brad's Arduino UNO and
-#    - 128x64 OLED Display SDI
+# Sensors used
+#    - BMP390 highly accurate pressure & altitude
+#    - BME680 temp, humidity, pressure, IAQ, altitude
+#    - rotary encoder to adjust alt & pressure (slp at nearest airport)
+#    - ssd1309 SDI 128x64 OLED Display (SW is ssd1306)
 #    - in/cm F/C changed with button #1
-#    - set known altitude, input with potentiameter, or
-#    - set known sea kevel pressure from nearest airport, input with potentiameter
 #    - buttons debounced with efficient rp2 interrupts -- nice!
-#    - ssd1309 SDI or I2C code (SW is ssd1306)
-# my home office is
-#    365.0 feet elevation, 111.25m
-#    first bme680 says 287.1 feet, 85.51 m
-#      correction: +77.9' or + 25.75m correction needed)
-# my garage is at <todo> feet elevation
-#    ~335 feet elevation, 102.11m  (26' lower than offie)
+#
+# Use nearest airport for sea level pessure
+#    Portland updated hourly (7 min before the hour)
+#        https://www.weather.gov/wrh/timeseries?site=KPDX
+#
+#    my home office is
+#        365.0 feet elevation, 111.25m
+#        first bme680 says 287.1 feet, 85.51 m
+#        correction: +77.9' or + 25.75m correction needed)
+#
+#    my garage is at <todo> feet elevation
+#        ~335 feet elevation, 102.11m  (26' lower than offie)
 #
 # Key links
 #     https://micropython.org/download/RPI_PICO2/ for latest .uf2 preview
 #     https://docs.micropython.org/en/latest/esp8266/tutorial/ssd1306.html
+#
 # pycharm stubs
 #   : https://micropython-stubs.readthedocs.io/en/main/packages.html#mp-packages
 #
 # TODOs
-#  * add digital encoder, use it's button for 10' correction, else 1' correction per dedent
-#  * add button #3 to go between detail data & large font summary
+#  * add digital encoder, use it's button for 10' correction vs else 1' adjust
+#  * add button #3 to switch between large font summary & detailed data 
 #
 # by bradcar
 
@@ -40,8 +47,9 @@ from machine import Pin, I2C, ADC
 
 # Peter Hinch fonts: https://github.com/peterhinch/micropython-font-to-py
 # short_writer Code modified by: Charlotte Swift
-from writer_short import Writer
 import freesans20 as font_20px   # 20px high
+from writer_short import Writer
+from rotary_irq_rp2 import RotaryIRQ
 
 # ic2
 # from ssd1306 import SSD1306_I2C
@@ -59,8 +67,13 @@ on_pico_temp = machine.ADC(4)
 uart0 = machine.UART(0, 115200, tx=Pin(0), rx=Pin(1))
 button_1 = Pin(2, Pin.IN, Pin.PULL_UP)  # interrupt cm/in button pins
 button_2 = Pin(3, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
-button_3 = Pin(4, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
-buzzer = Pin(5, Pin.OUT)
+
+# TODO Bluetooth?
+# Pin 4?, 5?
+
+rotary = RotaryIRQ(pin_num_clk=6, pin_num_dt=7, min_val=0, reverse=False, \
+                range_mode=RotaryIRQ.RANGE_UNBOUNDED)
+rotary_switch = Pin(8, Pin.IN, Pin.PULL_UP)
 
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
 # i2c=I2C(0,sda=Pin(12), scl=Pin(13), freq=400000)
@@ -73,12 +86,10 @@ cs = machine.Pin(9)  # dummy (any un-used pin), no connection
 res = machine.Pin(12)  # RES (RST)  gp12
 dc = machine.Pin(13)  # DC         gp13
 
-# ADC3 signal = gp28:  Pin 33 AGND left, 34 ADC3(middle pin), Vcc right pin
-pot = ADC(Pin(28))
-
 led = Pin(25, Pin.OUT)
 # Pin assignment  i2c1 
 i2c = I2C(id=1, scl=Pin(27), sda=Pin(26))
+buzzer = Pin(28, Pin.OUT)
 
 # BME690 #77 address, no way to change to alt address on my version
 bme = BME680_I2C(i2c=i2c)
@@ -92,39 +103,11 @@ bme = BME680_I2C(i2c=i2c)
 oled_spi = machine.SPI(1)
 # print(f"oled_spi:{oled_spi}")
 oled = SSD1306_SPI(DISP_WIDTH, DISP_HEIGHT, oled_spi, dc, res, cs)
-
 text_20px = Writer(oled,font_20px, verbose=False)
 
-# === Bitmap DISPLAY IMAGES ====
-# image2cpp (convert png into C code): https://javl.github.io/image2cpp/
-#
-# 'art-car-imag', 56x15px
-bitmap_artcar_image_back = bytearray([
-    0xc9,0x04,0x52,0x91,0x0c,0x08,0x43,0xc8,0x82,0x8e,0x90,0x93,0x10,0x93,0xe0,0x63,
-    0x08,0x78,0xe0,0xe3,0x07,0xff,0x9f,0xff,0xff,0xff,0xfc,0xff,0xc0,0x00,0x00,0x00,
-    0x00,0x00,0x03,0x40,0x1c,0xf3,0xe3,0x8e,0x78,0x02,0x42,0x22,0x88,0x84,0x51,0x44,
-    0x42,0x42,0x22,0x88,0x84,0x11,0x44,0x42,0x42,0x22,0xf0,0x84,0x11,0x78,0x42,0x22,
-    0x3e,0x88,0x84,0x1f,0x44,0x44,0x10,0x22,0x88,0x84,0x51,0x44,0x08,0x0c,0x22,0x88,
-    0x83,0x91,0x44,0x30,0x03,0x00,0x00,0x00,0x00,0x00,0xc0,0x00,0xff,0xff,0xff,0xff,
-    0xff,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
-])
-#
-# rear 'unit_cm', 24x10px
-bitmap_unit_cm = bytearray([
-    0xf0,0x03,0xc0,0x80,0x00,0x40,0xbe,0xff,0x40,0xb6,0xdb,0x40,0x30,0xdb,0x00,0x30,
-    0xdb,0x00,0xb6,0xdb,0x40,0xbe,0xdb,0x40,0x80,0x00,0x40,0xf0,0x03,0xc0
-])
-# 'unit in', 24x10px
-bitmap_unit_in = bytearray([
-    0xf0,0x03,0xc0,0x80,0x00,0x40,0x8c,0x7c,0x40,0x8c,0x6c,0x40,0x0c,0x6c,0x00,0x0c,
-    0x6c,0x00,0x8c,0x6c,0x40,0x8c,0x6c,0x40,0x80,0x00,0x40,0xf0,0x03,0xc0
-])
-# 'degree-temp', 24x10px
-degree_temp = bytearray([
-    0xf0,0x00,0x0f,0x80,0x00,0x01,0x80,0x00,0x0d,0x80,0x00,0x0d,0x00,0x00,0x00,0x00,
-    0x00,0x00,0x80,0x00,0x01,0x80,0x00,0x01,0x80,0x00,0x01,0xf0,0x00,0x0f
-])
-DWELL_MS_LOOP = 100
+
+# === Constants ====
+DWELL_MS_LOOP = 300
 PDX_SLP_1013 = 1009.90
 OVER_TEMP_WARNING = 70.0
 
@@ -186,6 +169,11 @@ def iaq_quality(iaq_value):
 def calc_sea_level_pressure(hpa, meters):
     """
     Calculate the sea level pressure from the hpa pressure at a known elevation
+    slightly different formula at:
+       https://www.brisbanehotairballooning.com.au/pressure-and-altitude-conversion/
+       https://www.mide.com/air-pressure-at-altitude-calculator
+       https://www.omnicalculator.com/physics/air-pressure-at-altitude
+       https://en.wikipedia.org/wiki/Barometric_formula
 
     :param hpa: current hpa pressure
     :param meters: meters elevation
@@ -363,7 +351,18 @@ def display_big_num(buzz):
 
     param:buzz:  distance if dist = -1.0 then display error
     """
+    global warning_toggle
+    # display pressure in hpa only
     oled.fill(0)
+    oled.text("Altimeter", 0, 0)
+    
+    # when iaq quality poor, flash "iaq" at dwell rate (300ms) in box in upper right
+    if iaq > 150.0:
+        oled.fill_rect(128-3*8, 0, 26, 10, 1-warning_toggle)
+        oled.text("iaq", 128-3*8-1, 1, warning_toggle)
+        warning_toggle = 1 - warning_toggle
+    
+    # display pressure in hpa only
     if metric:
         chars = " m"
         convert = 1.0
@@ -371,13 +370,11 @@ def display_big_num(buzz):
         chars = "\'"
 #         chars = " f"
         convert = 3.28084
-
-    oled.text("Altimeter", 0, 0)
     oled.text("Alt", 16, 20)
     text_20px.set_textpos(49, 15)
     text_20px.printstring(f"{(altitude_m*convert):.0f}{chars}") #10px per char? variable space width
     
-    #display pressure in hpa only
+    # display pressure in hpa only
     oled.text("hPA", 16, 43)
     text_20px.set_textpos(52, 38)
     text_20px.printstring(f"{pressure_hpa:.1f}") #10px per char? variable space width
@@ -419,11 +416,21 @@ def update_numbers(alt, press):
     return
 
 
+def adjust_feet_elevation (new_alt_feet):
+    """
+    :param new_alt_feet: input new_alt_feet
+    :return: new_alt_feet with adjustment
+    """
+    adjust = 0
+    new_alt_feet = new_alt_feet + adjust
+    return new_alt_feet
+
+
 def input_known_values(buzz):
     """
-    set known value of altitude in Meters or feet
-    Elevation range on earth :-500 to 30,000 feet, limit range of pot's entry to these values
-    record Sea Level Pressure: 870 to 1085, which is by standard always hpa not inches-of-mercury
+    adjust altitude in increments of +/- 1 foot or +/- 10 foot
+    show in either feet or meters
+    dependent variable is new Sea Level Pressure in hpa
 
     param:buzz: buzz if move to next input
     """
@@ -431,6 +438,7 @@ def input_known_values(buzz):
 
     err = None
     new_alt = altitude_m
+    print(f"start: {new_alt=}")
     new_pressure = pressure_hpa
     if buzz:
         buzzer.on()
@@ -441,15 +449,19 @@ def input_known_values(buzz):
     oled.text(f"setting...", 0, 0)
     update_numbers(altitude_m, pressure_hpa)
 
-    #### Enter in New Altitude
+    #### Increment/decrement New Altitude in feet, calcule new sea level pressure
+    rotary_multiplier = 1
+    rotary_old = rotary.value()
     while (button2_not_pushed()):
-        per = read_pot()
-        print(f"{(per*100.0)=}")
+        new_alt_feet = new_alt * 3.28084
 
-        # 0 to 70  (per * 70.0) + 970  gives 970 to 1040
-        new_pressure = (per * 70.0) + 970.0
-        new_alt = calc_altitude(pressure_hpa, new_pressure)
-        print (f"{new_alt=}, {new_pressure=}\n")
+        new_alt_feet = adjust_feet_elevation(new_alt_feet)
+#         new_alt_feet = adjust_feet_elevation(365.0)
+        new_alt = new_alt_feet / 3.28084
+        
+        new_slp = calc_sea_level_pressure(pressure_hpa, new_alt)
+        print (f"{new_alt=}, {new_alt_feet=}")
+        print (f"{new_slp=}, {sea_level_pressure_hpa=}, {(new_slp - sea_level_pressure_hpa)=}\n")
                 
         # Button 1: cm/in
         if interrupt_1_flag == 1:
@@ -458,24 +470,19 @@ def input_known_values(buzz):
             metric = not metric  # Toggle between metric and imperial units
   
         zzz(.2)
-        if not metric:
-            new_alt = new_alt * 3.28084
         if debug:
-            print(f"{new_alt=}")
-            print(f"{sea_level_pressure_hpa=}")
-            print(f"{new_pressure=}")
-        update_numbers(new_alt, new_pressure)
+            print(f"{new_alt=},{new_alt_feet=} ")
+            print(f"{sea_level_pressure_hpa=},{new_slp=}")
+        update_numbers(new_alt, new_slp)
 
-
-    update_numbers(new_alt, new_pressure)
+    # upon loop exit beep, and update global sea_level_pressure_hpa
     if buzz:
         buzzer.on()
         zzz(.2)
         buzzer.off()
+    sea_level_pressure_hpa = new_slp
 
-    sea_level_pressure_hpa = new_pressure
-
-    # return
+    # return after 5 seconds
     zzz(5)
     return err
 
@@ -492,11 +499,16 @@ interrupt_2_flag = 0
 debounce_1_time = 0
 debounce_2_time = 0
 
+# Sea level pressure adjustment is 0.12598 hPA per foot @ 365'
+# SLP_BME680_CALIBRATION = 2.516052
+SLP_BME680_CALIBRATION = 2.516052 
 sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = 1025.90
+sea_level_pressure_hpa = SLP_BME680_CALIBRATION + 1024.70
+
 temp_f = None
 temp_c = None
 humidity = None
+warning_toggle = 0
 
 print("Starting...")
 print("====================================")
@@ -512,9 +524,10 @@ else:
 print("====================================")
 print(f"oled_spi:{oled_spi}")
 
-# at start display artcar image at top of oled
+# blank display
 oled.fill(0)
-oled.blit(FrameBuffer(bitmap_artcar_image_back, 56, 15, MONO_HLSB), 22, 36)
+oled.text("Starting", 0, 0)
+oled.text("altimeter...", 0, 8)
 oled.show()
 
 if buzzer_sound: buzzer.on()
@@ -528,6 +541,7 @@ time_since_last_temp_update = time.ticks_ms()
 
 try:
     while True:
+        dwell = DWELL_MS_LOOP
         loop_time = time.ticks_ms()
         elapsed_time = time.ticks_diff(time.ticks_ms(), time_since_last_temp_update)
         if debug: print(f"Time since last temp ={elapsed_time}")
@@ -550,6 +564,7 @@ try:
         #  * BME680 temp & humidity (189ms duration)
 
         if first_run or elapsed_time > 3000:
+            dwell = DWELL_MS_LOOP - 189
             time_since_last_temp_update = time.ticks_ms()
 
             # check for over temperature onboard pico
@@ -563,9 +578,16 @@ try:
             else:
                 if debug: print(f"{temp_c=:.2f}")
                 temp_f = (temp_c * 9.0 / 5.0) + 32.0
-
             first_run = False
 
+        # Every loop adjust for if sensor read
+        time.sleep_ms(dwell)
+        led.toggle()
+        loop_elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
+        if debug:
+            print(f"loop time with {dwell}ms delay={loop_elapsed_time}")
+        
+        # update display at uniform timing
         if not error:
 #             display_environment(buzzer_sound)
             display_big_num(buzzer_sound)
@@ -575,12 +597,6 @@ try:
             oled.fill_rect(0, 11, 128, 9, 1)
             oled.text(f"No Alt Sensor", 13, 12, 0)
             oled.show()  
-
-        # Every loop do this
-        led.toggle()
-        time.sleep_ms(DWELL_MS_LOOP)
-        loop_elapsed_time = time.ticks_diff(time.ticks_ms(), loop_time)
-#         print(f"loop time with {DWELL_MS_LOOP}ms delay={loop_elapsed_time}")
 
 # if control-c at end clean up pico2
 except KeyboardInterrupt:
