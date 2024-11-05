@@ -1,7 +1,5 @@
 # Raspberry Pi Pico 2: Altimeter = Elevation & sea level pressure ajdust - Nov 2024
 #
-# Uses.....
-#
 # Sensors used
 #    - BMP390 highly accurate pressure & altitude
 #    - BME680 temp, humidity, pressure, IAQ, altitude
@@ -455,8 +453,24 @@ def input_known_values(buzz):
     while (button2_not_pushed()):
         new_alt_feet = new_alt * 3.28084
 
-        new_alt_feet = adjust_feet_elevation(new_alt_feet)
-#         new_alt_feet = adjust_feet_elevation(365.0)
+        rotary_new = rotary.value()
+        if rotary_switch.value() == 0:
+            if rotary_multiplier == 1:
+                rotary_multiplier = 10
+            else:
+                rotary_multiplier = 1
+            while rotary_switch.value() == 0:
+                continue
+
+        if rotary_old != rotary_new:
+            if rotary_old < rotary_new:
+                direction = 1
+            else:
+                direction = -1
+            new_alt_feet = new_alt_feet + direction*rotary_multiplier
+            rotary_old = rotary_new
+            if debug: print(f"{new_alt_feet=}")
+        
         new_alt = new_alt_feet / 3.28084
         
         new_slp = calc_sea_level_pressure(pressure_hpa, new_alt)
@@ -483,7 +497,7 @@ def input_known_values(buzz):
     sea_level_pressure_hpa = new_slp
 
     # return after 5 seconds
-    zzz(5)
+    zzz(0.5)
     return err
 
 
@@ -503,7 +517,7 @@ debounce_2_time = 0
 # SLP_BME680_CALIBRATION = 2.516052
 SLP_BME680_CALIBRATION = 2.516052 
 sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = SLP_BME680_CALIBRATION + 1024.70
+sea_level_pressure_hpa = SLP_BME680_CALIBRATION + 1025.50
 
 temp_f = None
 temp_c = None
