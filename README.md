@@ -11,6 +11,7 @@ Raspberry Pi Pico 2 ultrasonic distance - three sensors, can be front/back-facin
 * BME680 (I2C) - for inside temp & humidity, air pressure, air quality, and altitude.
   * will place inside outside air input to vent to protect from the weather, in case external temp sensor has issues
 * button debounce that uses efficient interrupt code (does not use CPU cycles with sleep, yay!)
+  * Has 3 buttons (1. set/adjust Rear/Front Sensors, 2. F/Celsius, 3. Iconic Distance summary or detail environmentals in small font)
 * Temperature from on-board RP2350 (no external pins, ADC4)
  
 ## My code is Based on UPIR's GREAT 2022 work: https://github.com/upiir/arduino_parking_sensor
@@ -69,6 +70,5 @@ I decided not to use A02YYTW(A0221AT, Controlled/Target UART mode) UART sensors,
  
 ## TODOs
 * Check what length of cat6(twister pair) that can be added to A02YYTW, BME280, DS18B20
-* Determine if should run SSD1309 on 5v
 * Consider putting air quality status in tiny font
 * Consider putting altitude in tiny font, but need to figure out way to input sea level pressure at neareat airport.
