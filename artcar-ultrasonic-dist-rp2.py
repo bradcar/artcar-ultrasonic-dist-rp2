@@ -10,6 +10,7 @@
 #      - on Raspberry Pi recalc offsets, and flip sensor graphics
 #      - on arduino could rotate display and flip,text,some graphics(not sensor)
 #    - in/cm F/C changed with button #1
+#    - rear-sensors/front-sebnsors changed with button #2
 #    - buttons debounced with efficient rp2 interrupts -- nice!
 #    - ssd1309 SDI or I2C code (sw is ssd1306)
 #
@@ -77,11 +78,10 @@ on_pico_temp = machine.ADC(4)
 
 # external pins
 uart0 = machine.UART(0, 115200, tx=Pin(0), rx=Pin(1))
-# dht_pin = machine.Pin(2)
 button_1 = Pin(2, Pin.IN, Pin.PULL_UP)  # interrupt cm/in button pins
 button_2 = Pin(3, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
-button_3 = Pin(4, Pin.IN, Pin.PULL_UP)  # interrupt rear/front button pins
-buzzer = Pin(5, Pin.OUT)
+button_3 = Pin(15, Pin.IN, Pin.PULL_UP)  # extra
+
 
 # https://www.tomshardware.com/how-to/oled-display-raspberry-pi-pico
 # i2c=I2C(0,sda=Pin(12), scl=Pin(13), freq=400000)
@@ -95,17 +95,17 @@ res = machine.Pin(12)  # RES (RST)  gp12
 dc = machine.Pin(13)  # DC         gp13
 
 # testing config: set up pins fo ultrasonic sensors using SensorData objects
-sensor = [
-    SensorData(echo_pin=4, trig_pin=3),
-    SensorData(echo_pin=20, trig_pin=21),
-    SensorData(echo_pin=16, trig_pin=17)
-]
-# # final config: set up pins fo ultrasonic sensors using SensorData objects
 # sensor = [
+#     SensorData(echo_pin=4, trig_pin=3),
 #     SensorData(echo_pin=20, trig_pin=21),
-#     SensorData(echo_pin=18, trig_pin=19),
 #     SensorData(echo_pin=16, trig_pin=17)
 # ]
+# final config: set up pins fo ultrasonic sensors using SensorData objects
+sensor = [
+    SensorData(echo_pin=20, trig_pin=21),
+    SensorData(echo_pin=18, trig_pin=19),
+    SensorData(echo_pin=16, trig_pin=17)
+]
 
 trigger = []
 echo = []
@@ -120,6 +120,7 @@ ds_pin = machine.Pin(22)
 led = Pin(25, Pin.OUT)
 # Pin assignment  i2c1 
 i2c = I2C(id=1, scl=Pin(27), sda=Pin(26))
+buzzer = Pin(28, Pin.OUT)
 
 
 bme = BME680_I2C(i2c=i2c)
@@ -379,18 +380,51 @@ OVER_TEMP_WARNING = 70.0
 # Button debouncer with efficient interrupts, which don't take CPU cycles!
 # https://electrocredible.com/raspberry-pi-pico-external-interrupts-button-micropython/
 def callback(pin):
-    global interrupt_1_flag, interrupt_2_flag, debounce_1_time, debounce_2_time
+    global button_1_pushed, button_2_pushed, button_3_pushed
+    global debounce_1_time, debounce_2_time, debounce_3_time
     if pin == button_1 and (int(time.ticks_ms()) - debounce_1_time) > 500:
-        interrupt_1_flag = 1
+        button_1_pushed = True
         debounce_1_time = time.ticks_ms()
     elif pin == button_2 and (int(time.ticks_ms()) - debounce_2_time) > 500:
-        interrupt_2_flag = 1
+        button_2_pushed = True
         debounce_2_time = time.ticks_ms()
+    elif pin == button_3 and (int(time.ticks_ms()) - debounce_3_time) > 500:
+        button_3_pushed = True
+        debounce_3_time = time.ticks_ms()
 
 
 button_1.irq(trigger=Pin.IRQ_FALLING, handler=callback)
 button_2.irq(trigger=Pin.IRQ_FALLING, handler=callback)
+button_3.irq(trigger=Pin.IRQ_FALLING, handler=callback)
 
+# Functions =================================================
+
+def button1():
+    global button_1_pushed
+    if button_1_pushed:
+        button_1_pushed = False
+        print("button 1 pushed")
+        return True
+    else:
+        return False
+
+
+def button2():
+    global button_2_pushed
+    if button_2_pushed:
+        button_2_pushed = False
+        print("button 2 pushed")
+        return True
+    else:
+        return False
+    
+def button3():
+    global button_3_pushed
+    if button_3_pushed:
+        button_3_pushed = False
+        return True
+    else:
+        return False
 
 def initialize_flipped_bitmaps():
     """
@@ -902,7 +936,7 @@ def display_tiles_dist():
     return
 
 
-def display_environment(dist, buzz):
+def display_environment_details(dist, buzz):
     """
     display just environment readings & car image(for fun)
     No need to oled.fill(0) before or oled.show() after call
@@ -911,7 +945,7 @@ def display_environment(dist, buzz):
     param:buzz:  distance if dist = -1.0 then display error
     """
     oled.fill(0)
-    if dist < 120.0 and buzz:
+    if dist < 12.0 and buzz:
         buzzer.on()
     elif buzz:
         buzzer.off()
@@ -972,14 +1006,16 @@ sensor[2].label_startpos_y = 20
 sensor[2].label_endpos_x = 86  # was 97 (-11)
 sensor[2].label_endpos_y = 56  # was 57
 
-interrupt_1_flag = 0
-interrupt_2_flag = 0
+button_1_pushed = False
+button_2_pushed = False
+button_3_pushed = False
 debounce_1_time = 0
 debounce_2_time = 0
+debounce_3_time = 0
 
 speed_sound = SPEED_SOUND_20C_70H
 sea_level_pressure_hpa = PDX_SLP_1013
-sea_level_pressure_hpa = 1003.5
+sea_level_pressure_hpa = 1010.70
 temp_f = None
 temp_c = None
 humidity = None
@@ -1047,19 +1083,21 @@ try:
         loop_time = time.ticks_ms()
         elapsed_time = time.ticks_diff(time.ticks_ms(), time_since_last_temp_update)
         if debug: print(f"Time since last temp ={elapsed_time}")
-        
+            
         # Button 1: cm/in
-        if interrupt_1_flag == 1:
-            interrupt_1_flag = 0
-            if debug: print("button 1 Interrupt Detected: in/cm")
+        if button1():
             metric = not metric  # Toggle between metric and imperial units
 
-        # Button 2: rear sensors or front sensors
-        if interrupt_2_flag == 1:
-            interrupt_2_flag = 0
-            if debug: print("button 2 Interrupt Detected: rear/front")
-            rear = not rear  # Toggle between rear /front
-
+        # Button 2: Adjust altitude or sea level hpa to known values
+        if button2():
+            rear = not rear  # Toggle between rear/front
+            print(f"{rear=}")
+        
+        # Button 3: show details of environment
+        if button3():
+            show_env = not show_env  # Toggle between rear/front
+            print(f"{show_env=}")
+            
         # EVERY 3 SECONDS, calc speed of sound based on
         # * onewire outside temp (16ms duration)
         # * dht22 temp & humidity (271ms duration)
@@ -1095,7 +1133,7 @@ try:
                 if debug: print(f"Inside temp C = {inside_temp_c:.2f}")
 
             elapsed_time = time.ticks_diff(time.ticks_ms(), start)
-            print(f"inside temp time = {elapsed_time}\n")
+            print(f"time inside temp = {elapsed_time}ms\n")
 
             # if no outside temp use inside temp
             # if no inside temp/humidity use 70%
@@ -1132,7 +1170,7 @@ try:
 
         if show_env:
             # pick first working ultrasonic to show
-            display_environment(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0, buzzer_sound)
+            display_environment_details(sensor[working_ultrasonics[0]].cm if working_ultrasonics else -1.0, buzzer_sound)
         else:
             oled.fill(0)
             display_car(temp_c, temp_f)
